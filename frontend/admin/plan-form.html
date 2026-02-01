@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plan Form - Broadband Billing System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+    <div class="min-h-screen py-8 px-4">
+        <div class="max-w-3xl mx-auto">
+            <div class="bg-white rounded-lg shadow-md p-8">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 id="form-title" class="text-2xl font-bold text-gray-900">Add Plan</h2>
+                    <a href="plans.html" class="text-gray-600 hover:text-gray-900">
+                        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </a>
+                </div>
+
+                <form id="plan-form" class="space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="md:col-span-2">
+                            <label for="name" class="block text-sm font-medium text-gray-700 mb-2">
+                                Plan Name <span class="text-red-500">*</span>
+                            </label>
+                            <input 
+                                type="text" 
+                                id="name" 
+                                name="name" 
+                                required
+                                placeholder="e.g., Premium 100 Mbps"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <p class="error-message text-red-500 text-sm mt-1 hidden"></p>
+                        </div>
+
+                        <div class="md:col-span-2">
+                            <label for="description" class="block text-sm font-medium text-gray-700 mb-2">
+                                Description
+                            </label>
+                            <textarea 
+                                id="description" 
+                                name="description" 
+                                rows="3"
+                                placeholder="Plan description and features..."
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
+                        </div>
+
+                        <div>
+                            <label for="downloadSpeedMbps" class="block text-sm font-medium text-gray-700 mb-2">
+                                Download Speed (Mbps) <span class="text-red-500">*</span>
+                            </label>
+                            <input 
+                                type="number" 
+                                id="downloadSpeedMbps" 
+                                name="downloadSpeedMbps" 
+                                required
+                                min="1"
+                                placeholder="100"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <p class="error-message text-red-500 text-sm mt-1 hidden"></p>
+                        </div>
+
+                        <div>
+                            <label for="uploadSpeedMbps" class="block text-sm font-medium text-gray-700 mb-2">
+                                Upload Speed (Mbps) <span class="text-red-500">*</span>
+                            </label>
+                            <input 
+                                type="number" 
+                                id="uploadSpeedMbps" 
+                                name="uploadSpeedMbps" 
+                                required
+                                min="1"
+                                placeholder="50"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <p class="error-message text-red-500 text-sm mt-1 hidden"></p>
+                        </div>
+
+                        <div>
+                            <label for="price" class="block text-sm font-medium text-gray-700 mb-2">
+                                Price (SAR) <span class="text-red-500">*</span>
+                            </label>
+                            <input 
+                                type="number" 
+                                id="price" 
+                                name="price" 
+                                required
+                                min="0"
+                                step="0.01"
+                                placeholder="299.00"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <p class="error-message text-red-500 text-sm mt-1 hidden"></p>
+                        </div>
+
+                        <div>
+                            <label for="durationDays" class="block text-sm font-medium text-gray-700 mb-2">
+                                Billing Cycle (Days) <span class="text-red-500">*</span>
+                            </label>
+                            <select 
+                                id="durationDays" 
+                                name="durationDays" 
+                                required
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="30">Monthly (30 days)</option>
+                                <option value="90">Quarterly (90 days)</option>
+                                <option value="180">Semi-Annual (180 days)</option>
+                                <option value="365">Annual (365 days)</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label for="dataLimitGB" class="block text-sm font-medium text-gray-700 mb-2">
+                                Data Limit (GB) <span class="text-red-500">*</span>
+                            </label>
+                            <input 
+                                type="number" 
+                                id="dataLimitGB" 
+                                name="dataLimitGB" 
+                                required
+                                min="0"
+                                placeholder="0 for unlimited"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <p class="text-xs text-gray-500 mt-1">Set to 0 for unlimited data</p>
+                        </div>
+
+                        <div>
+                            <label for="mikrotikProfile" class="block text-sm font-medium text-gray-700 mb-2">
+                                MikroTik Profile
+                            </label>
+                            <input 
+                                type="text" 
+                                id="mikrotikProfile" 
+                                name="mikrotikProfile"
+                                placeholder="profile-100mbps"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                    </div>
+
+                    <div class="pt-6 border-t border-gray-200">
+                        <label class="flex items-center">
+                            <input 
+                                type="checkbox" 
+                                id="isActive" 
+                                name="isActive"
+                                checked
+                                class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                            <span class="ml-2 text-sm text-gray-700">Plan is active and available for subscription</span>
+                        </label>
+                    </div>
+
+                    <div class="flex items-center justify-end space-x-4 pt-6 border-t border-gray-200">
+                        <a href="plans.html" class="px-6 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors">
+                            Cancel
+                        </a>
+                        <button 
+                            type="submit" 
+                            class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            Save Plan
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/api.js"></script>
+    <script src="../js/utils.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/components.js"></script>
+    <script>
+        if (!auth.requireAuth()) {
+            throw new Error('Authentication required');
+        }
+
+        const mode = utils.getQueryParam('mode') || 'create';
+        const planId = utils.getQueryParam('id');
+
+        document.getElementById('form-title').textContent = mode === 'edit' ? 'Edit Plan' : 'Add Plan';
+
+        async function loadPlan() {
+            if (mode !== 'edit' || !planId) return;
+
+            try {
+                utils.showLoading();
+                const response = await api.get(`/plans/${planId}`);
+                
+                if (response && response.data) {
+                    const plan = response.data;
+                    document.getElementById('name').value = plan.name || '';
+                    document.getElementById('description').value = plan.description || '';
+                    document.getElementById('downloadSpeedMbps').value = plan.downloadSpeedMbps || '';
+                    document.getElementById('uploadSpeedMbps').value = plan.uploadSpeedMbps || '';
+                    document.getElementById('price').value = plan.price || '';
+                    document.getElementById('durationDays').value = plan.durationDays || 30;
+                    document.getElementById('dataLimitGB').value = plan.dataLimitGB || 0;
+                    document.getElementById('mikrotikProfile').value = plan.mikrotikProfile || '';
+                    document.getElementById('isActive').checked = plan.isActive !== false;
+                }
+            } catch (error) {
+                console.error('Error loading plan:', error);
+                utils.showToast('Failed to load plan data', 'error');
+            } finally {
+                utils.hideLoading();
+            }
+        }
+
+        function validateForm() {
+            const errors = [];
+            
+            const name = document.getElementById('name').value.trim();
+            const downloadSpeed = document.getElementById('downloadSpeedMbps').value;
+            const uploadSpeed = document.getElementById('uploadSpeedMbps').value;
+            const price = document.getElementById('price').value;
+            const dataLimit = document.getElementById('dataLimitGB').value;
+
+            if (!name) {
+                errors.push({ field: 'name', message: 'Plan name is required' });
+            }
+
+            if (!downloadSpeed || downloadSpeed < 1) {
+                errors.push({ field: 'downloadSpeedMbps', message: 'Download speed must be at least 1 Mbps' });
+            }
+
+            if (!uploadSpeed || uploadSpeed < 1) {
+                errors.push({ field: 'uploadSpeedMbps', message: 'Upload speed must be at least 1 Mbps' });
+            }
+
+            if (!price || price < 0) {
+                errors.push({ field: 'price', message: 'Price must be a positive number' });
+            }
+
+            if (dataLimit === '' || dataLimit < 0) {
+                errors.push({ field: 'dataLimitGB', message: 'Data limit must be 0 or greater' });
+            }
+
+            document.querySelectorAll('.error-message').forEach(el => {
+                el.classList.add('hidden');
+                el.textContent = '';
+            });
+
+            errors.forEach(error => {
+                const field = document.getElementById(error.field);
+                if (field) {
+                    const errorEl = field.parentElement.querySelector('.error-message');
+                    if (errorEl) {
+                        errorEl.textContent = error.message;
+                        errorEl.classList.remove('hidden');
+                    }
+                    field.classList.add('border-red-500');
+                }
+            });
+
+            return errors.length === 0;
+        }
+
+        document.getElementById('plan-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            if (!validateForm()) {
+                utils.showToast('Please fix the errors in the form', 'error');
+                return;
+            }
+
+            const formData = {
+                name: document.getElementById('name').value.trim(),
+                description: document.getElementById('description').value.trim() || null,
+                downloadSpeedMbps: parseInt(document.getElementById('downloadSpeedMbps').value),
+                uploadSpeedMbps: parseInt(document.getElementById('uploadSpeedMbps').value),
+                price: parseFloat(document.getElementById('price').value),
+                durationDays: parseInt(document.getElementById('durationDays').value),
+                dataLimitGB: parseInt(document.getElementById('dataLimitGB').value),
+                mikrotikProfile: document.getElementById('mikrotikProfile').value.trim() || null,
+                isActive: document.getElementById('isActive').checked
+            };
+
+            try {
+                utils.showLoading();
+
+                let response;
+                if (mode === 'edit' && planId) {
+                    response = await api.put(`/plans/${planId}`, formData);
+                    utils.showToast('Plan updated successfully', 'success');
+                } else {
+                    response = await api.post('/plans', formData);
+                    utils.showToast('Plan created successfully', 'success');
+                }
+
+                setTimeout(() => {
+                    window.location.href = 'plans.html';
+                }, 1500);
+            } catch (error) {
+                console.error('Error saving plan:', error);
+                utils.showToast(error.message || 'Failed to save plan', 'error');
+            } finally {
+                utils.hideLoading();
+            }
+        });
+
+        document.querySelectorAll('input, select, textarea').forEach(field => {
+            field.addEventListener('input', () => {
+                field.classList.remove('border-red-500');
+                const errorEl = field.parentElement.querySelector('.error-message');
+                if (errorEl) {
+                    errorEl.classList.add('hidden');
+                }
+            });
+        });
+
+        loadPlan();
+    </script>
+</body>
+</html>

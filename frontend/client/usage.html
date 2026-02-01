@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Usage Statistics - Broadband Billing System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body class="bg-gray-100">
+    <nav class="bg-white shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <a href="dashboard.html" class="text-xl font-bold text-blue-600">Broadband Portal</a>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="dashboard.html" class="text-sm text-gray-700 hover:text-blue-600">Dashboard</a>
+                    <button onclick="auth.logout()" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm">
+                        Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="mb-8">
+            <h2 class="text-3xl font-bold text-gray-900">Usage Statistics</h2>
+            <p class="text-gray-600 mt-2">Monitor your data usage</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm font-medium uppercase">Total This Month</p>
+                        <p id="total-usage" class="text-3xl font-bold text-gray-900 mt-2">0 GB</p>
+                    </div>
+                    <div class="bg-blue-100 rounded-full p-3">
+                        <svg class="h-8 w-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm font-medium uppercase">Daily Average</p>
+                        <p id="avg-usage" class="text-3xl font-bold text-gray-900 mt-2">0 GB</p>
+                    </div>
+                    <div class="bg-green-100 rounded-full p-3">
+                        <svg class="h-8 w-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm font-medium uppercase">Data Remaining</p>
+                        <p id="remaining-usage" class="text-3xl font-bold text-gray-900 mt-2">0 GB</p>
+                    </div>
+                    <div class="bg-purple-100 rounded-full p-3">
+                        <svg class="h-8 w-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold text-gray-900">Usage Chart (Last 30 Days)</h3>
+                <button onclick="downloadReport()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm">
+                    Download Report
+                </button>
+            </div>
+            <div class="relative h-96">
+                <canvas id="usage-chart"></canvas>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Daily Breakdown</h3>
+            <div id="usage-table"></div>
+        </div>
+    </div>
+
+    <script src="../js/api.js"></script>
+    <script src="../js/utils.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/components.js"></script>
+    <script>
+        if (!auth.requireAuth()) {
+            throw new Error('Authentication required');
+        }
+
+        let usageChart = null;
+        let usageData = [];
+
+        async function loadUsageStatistics() {
+            try {
+                utils.showLoading();
+                
+                const response = await api.get('/usage/daily?days=30');
+                
+                if (response && response.data) {
+                    usageData = response.data;
+                    
+                    const totalUsage = usageData.reduce((sum, item) => sum + (item.dataGB || 0), 0);
+                    const avgUsage = usageData.length > 0 ? totalUsage / usageData.length : 0;
+                    
+                    document.getElementById('total-usage').textContent = `${totalUsage.toFixed(2)} GB`;
+                    document.getElementById('avg-usage').textContent = `${avgUsage.toFixed(2)} GB`;
+                    
+                    const subscription = await api.get('/subscriptions/me');
+                    if (subscription && subscription.data) {
+                        const dataLimit = subscription.data.dataLimitGB || 0;
+                        const remaining = Math.max(0, dataLimit - totalUsage);
+                        document.getElementById('remaining-usage').textContent = dataLimit > 0 ? `${remaining.toFixed(2)} GB` : 'Unlimited';
+                    }
+                    
+                    renderUsageChart();
+                    renderUsageTable();
+                }
+            } catch (error) {
+                console.error('Error loading usage statistics:', error);
+                utils.showToast('Failed to load usage statistics', 'error');
+            } finally {
+                utils.hideLoading();
+            }
+        }
+
+        function renderUsageChart() {
+            const ctx = document.getElementById('usage-chart').getContext('2d');
+            
+            if (usageChart) {
+                usageChart.destroy();
+            }
+
+            usageChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: usageData.map(item => utils.formatDate(item.date)),
+                    datasets: [{
+                        label: 'Data Usage (GB)',
+                        data: usageData.map(item => item.dataGB || 0),
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        borderColor: 'rgba(59, 130, 246, 1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 3,
+                        pointHoverRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Data Usage (GB)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Date'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `Usage: ${context.parsed.y.toFixed(2)} GB`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderUsageTable() {
+            const columns = [
+                { label: 'Date', field: 'date', type: 'date' },
+                { 
+                    label: 'Download (GB)', 
+                    field: 'downloadGB',
+                    render: (row) => (row.downloadGB || 0).toFixed(2)
+                },
+                { 
+                    label: 'Upload (GB)', 
+                    field: 'uploadGB',
+                    render: (row) => (row.uploadGB || 0).toFixed(2)
+                },
+                { 
+                    label: 'Total (GB)', 
+                    field: 'dataGB',
+                    render: (row) => (row.dataGB || 0).toFixed(2)
+                },
+                { 
+                    label: 'Session Duration', 
+                    field: 'sessionDuration',
+                    render: (row) => {
+                        const minutes = row.sessionDuration || 0;
+                        const hours = Math.floor(minutes / 60);
+                        const mins = minutes % 60;
+                        return `${hours}h ${mins}m`;
+                    }
+                }
+            ];
+            
+            components.renderTable(usageData.reverse(), columns, 'usage-table');
+        }
+
+        function downloadReport() {
+            if (usageData.length === 0) {
+                utils.showToast('No data to export', 'warning');
+                return;
+            }
+
+            const headers = ['Date', 'Download (GB)', 'Upload (GB)', 'Total (GB)', 'Session Duration (min)'];
+            const rows = usageData.map(item => [
+                utils.formatDate(item.date),
+                (item.downloadGB || 0).toFixed(2),
+                (item.uploadGB || 0).toFixed(2),
+                (item.dataGB || 0).toFixed(2),
+                item.sessionDuration || 0
+            ]);
+
+            let csvContent = headers.join(',') + '\n';
+            rows.forEach(row => {
+                csvContent += row.map(cell => `"${cell}"`).join(',') + '\n';
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            
+            link.setAttribute('href', url);
+            link.setAttribute('download', `usage_report_${new Date().toISOString().split('T')[0]}.csv`);
+            link.style.visibility = 'hidden';
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            utils.showToast('Usage report downloaded successfully', 'success');
+        }
+
+        loadUsageStatistics();
+    </script>
+</body>
+</html>

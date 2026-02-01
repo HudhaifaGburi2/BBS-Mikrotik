@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Client Dashboard - Broadband Billing System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+    <nav class="bg-white shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <h1 class="text-xl font-bold text-blue-600">Broadband Portal</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span id="user-name" class="text-sm text-gray-700 hidden md:block">Welcome</span>
+                    <button onclick="auth.logout()" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm">
+                        Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="mb-8">
+            <h2 class="text-3xl font-bold text-gray-900">Dashboard</h2>
+            <p class="text-gray-600 mt-2">Welcome to your broadband account portal</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm font-medium uppercase">Current Balance</p>
+                        <p id="balance" class="text-2xl font-bold text-gray-900 mt-2">-</p>
+                    </div>
+                    <div class="bg-blue-100 rounded-full p-3">
+                        <svg class="h-8 w-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm font-medium uppercase">Current Plan</p>
+                        <p id="plan-name" class="text-2xl font-bold text-gray-900 mt-2">-</p>
+                    </div>
+                    <div class="bg-green-100 rounded-full p-3">
+                        <svg class="h-8 w-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm font-medium uppercase">Expiry Date</p>
+                        <p id="expiry-date" class="text-2xl font-bold text-gray-900 mt-2">-</p>
+                    </div>
+                    <div class="bg-yellow-100 rounded-full p-3">
+                        <svg class="h-8 w-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm font-medium uppercase">Data Used</p>
+                        <p id="data-used" class="text-2xl font-bold text-gray-900 mt-2">-</p>
+                    </div>
+                    <div class="bg-purple-100 rounded-full p-3">
+                        <svg class="h-8 w-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <div class="lg:col-span-2 bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Usage This Month</h3>
+                <div class="space-y-4">
+                    <div>
+                        <div class="flex justify-between text-sm mb-2">
+                            <span class="text-gray-600">Data Usage</span>
+                            <span id="usage-percentage" class="font-medium text-gray-900">0%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-3">
+                            <div id="usage-bar" class="bg-blue-600 h-3 rounded-full transition-all duration-300" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+                <div class="space-y-3">
+                    <a href="subscription.html" class="block w-full px-4 py-3 bg-blue-600 text-white text-center rounded-lg hover:bg-blue-700 transition-colors">
+                        View Subscription
+                    </a>
+                    <a href="payment.html" class="block w-full px-4 py-3 bg-green-600 text-white text-center rounded-lg hover:bg-green-700 transition-colors">
+                        Make Payment
+                    </a>
+                    <a href="invoices.html" class="block w-full px-4 py-3 bg-gray-600 text-white text-center rounded-lg hover:bg-gray-700 transition-colors">
+                        View Invoices
+                    </a>
+                    <a href="usage.html" class="block w-full px-4 py-3 bg-purple-600 text-white text-center rounded-lg hover:bg-purple-700 transition-colors">
+                        Usage Statistics
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Recent Transactions</h3>
+            <div id="transactions-table"></div>
+        </div>
+    </div>
+
+    <script src="../js/api.js"></script>
+    <script src="../js/utils.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/components.js"></script>
+    <script>
+        if (!auth.requireAuth()) {
+            throw new Error('Authentication required');
+        }
+
+        const user = auth.getUser();
+        if (user && user.fullName) {
+            document.getElementById('user-name').textContent = `Welcome, ${user.fullName}`;
+        }
+
+        async function loadDashboardData() {
+            try {
+                utils.showLoading();
+                
+                const [subscriberResponse, subscriptionResponse] = await Promise.all([
+                    api.get('/subscribers/me'),
+                    api.get('/subscriptions/me')
+                ]);
+
+                if (subscriberResponse && subscriberResponse.data) {
+                    const subscriber = subscriberResponse.data;
+                    document.getElementById('balance').textContent = utils.formatCurrency(subscriber.balance || 0);
+                }
+
+                if (subscriptionResponse && subscriptionResponse.data) {
+                    const subscription = subscriptionResponse.data;
+                    document.getElementById('plan-name').textContent = subscription.planName || '-';
+                    document.getElementById('expiry-date').textContent = utils.formatDate(subscription.endDate);
+                    
+                    const dataUsed = subscription.dataUsedGB || 0;
+                    const dataLimit = subscription.dataLimitGB || 0;
+                    const usagePercentage = dataLimit > 0 ? Math.round((dataUsed / dataLimit) * 100) : 0;
+                    
+                    document.getElementById('data-used').textContent = `${dataUsed} GB`;
+                    document.getElementById('usage-percentage').textContent = `${usagePercentage}%`;
+                    document.getElementById('usage-bar').style.width = `${Math.min(usagePercentage, 100)}%`;
+                    
+                    if (usagePercentage > 90) {
+                        document.getElementById('usage-bar').classList.remove('bg-blue-600');
+                        document.getElementById('usage-bar').classList.add('bg-red-600');
+                    } else if (usagePercentage > 75) {
+                        document.getElementById('usage-bar').classList.remove('bg-blue-600');
+                        document.getElementById('usage-bar').classList.add('bg-yellow-600');
+                    }
+                }
+
+                await loadRecentTransactions();
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+                utils.showToast('Failed to load dashboard data', 'error');
+            } finally {
+                utils.hideLoading();
+            }
+        }
+
+        async function loadRecentTransactions() {
+            try {
+                const response = await api.get('/payments?pageSize=5');
+                
+                if (response && response.data) {
+                    const transactions = response.data.items || response.data;
+                    
+                    if (transactions.length === 0) {
+                        document.getElementById('transactions-table').innerHTML = `
+                            <div class="text-center py-8 text-gray-500">
+                                <p>No recent transactions</p>
+                            </div>
+                        `;
+                        return;
+                    }
+                    
+                    const columns = [
+                        { label: 'Date', field: 'paymentDate', type: 'date' },
+                        { label: 'Description', field: 'description', render: (row) => row.description || 'Payment' },
+                        { label: 'Amount', field: 'amount', type: 'currency' },
+                        { label: 'Method', field: 'paymentMethod' },
+                        { 
+                            label: 'Status', 
+                            field: 'status',
+                            render: (row) => {
+                                const colors = {
+                                    'Completed': 'bg-green-100 text-green-800',
+                                    'Pending': 'bg-yellow-100 text-yellow-800',
+                                    'Failed': 'bg-red-100 text-red-800'
+                                };
+                                const colorClass = colors[row.status] || 'bg-gray-100 text-gray-800';
+                                return `<span class="px-2 py-1 text-xs font-semibold rounded-full ${colorClass}">${row.status}</span>`;
+                            }
+                        }
+                    ];
+                    
+                    components.renderTable(transactions, columns, 'transactions-table');
+                }
+            } catch (error) {
+                console.error('Error loading transactions:', error);
+                document.getElementById('transactions-table').innerHTML = `
+                    <div class="text-center py-8 text-gray-500">
+                        <p>Failed to load transactions</p>
+                    </div>
+                `;
+            }
+        }
+
+        loadDashboardData();
+    </script>
+</body>
+</html>

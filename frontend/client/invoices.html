@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Invoices - Broadband Billing System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+    <nav class="bg-white shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <a href="dashboard.html" class="text-xl font-bold text-blue-600">Broadband Portal</a>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="dashboard.html" class="text-sm text-gray-700 hover:text-blue-600">Dashboard</a>
+                    <button onclick="auth.logout()" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm">
+                        Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="mb-8">
+            <h2 class="text-3xl font-bold text-gray-900">My Invoices</h2>
+            <p class="text-gray-600 mt-2">View and manage your invoices</p>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+                <div>
+                    <label for="status-filter" class="block text-sm font-medium text-gray-700 mb-2">Filter by Status</label>
+                    <select id="status-filter" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">All Invoices</option>
+                        <option value="Pending">Pending</option>
+                        <option value="Paid">Paid</option>
+                        <option value="Overdue">Overdue</option>
+                    </select>
+                </div>
+
+                <div class="flex items-end space-x-2">
+                    <button onclick="loadInvoices()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                        Apply Filter
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div id="invoices-table"></div>
+            <div id="pagination-container" class="mt-4"></div>
+        </div>
+    </div>
+
+    <script src="../js/api.js"></script>
+    <script src="../js/utils.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/components.js"></script>
+    <script>
+        if (!auth.requireAuth()) {
+            throw new Error('Authentication required');
+        }
+
+        let currentPage = 1;
+        const pageSize = 20;
+
+        async function loadInvoices() {
+            try {
+                utils.showLoading();
+                
+                const statusFilter = document.getElementById('status-filter').value;
+
+                const queryParams = new URLSearchParams({
+                    pageNumber: currentPage,
+                    pageSize: pageSize
+                });
+
+                if (statusFilter) {
+                    queryParams.append('status', statusFilter);
+                }
+
+                const response = await api.get(`/invoices/me?${queryParams.toString()}`);
+                
+                if (response && response.data) {
+                    const invoices = response.data.items || response.data;
+                    const totalPages = response.data.totalPages || 1;
+                    
+                    const columns = [
+                        { label: 'Invoice #', field: 'invoiceNumber' },
+                        { 
+                            label: 'Amount', 
+                            field: 'totalAmount',
+                            type: 'currency'
+                        },
+                        { 
+                            label: 'Issue Date', 
+                            field: 'issueDate',
+                            type: 'date'
+                        },
+                        { 
+                            label: 'Due Date', 
+                            field: 'dueDate',
+                            type: 'date'
+                        },
+                        { 
+                            label: 'Status', 
+                            field: 'status',
+                            render: (row) => {
+                                const statusColors = {
+                                    'Paid': 'bg-green-100 text-green-800',
+                                    'Pending': 'bg-yellow-100 text-yellow-800',
+                                    'Overdue': 'bg-red-100 text-red-800',
+                                    'Cancelled': 'bg-gray-100 text-gray-800'
+                                };
+                                const colorClass = statusColors[row.status] || 'bg-gray-100 text-gray-800';
+                                return `<span class="px-2 py-1 text-xs font-semibold rounded-full ${colorClass}">${row.status}</span>`;
+                            }
+                        },
+                        { 
+                            label: 'Actions', 
+                            field: 'id',
+                            render: (row) => {
+                                const viewButton = `<a href="../admin/invoice-detail.html?id=${row.id}" target="_blank" class="text-blue-600 hover:text-blue-800 mr-3">View</a>`;
+                                const payButton = row.status !== 'Paid' ? 
+                                    `<a href="payment.html?invoiceId=${row.id}" class="text-green-600 hover:text-green-800">Pay Now</a>` : 
+                                    '<span class="text-gray-400">Paid</span>';
+                                return `<div class="flex items-center space-x-3">${viewButton}${payButton}</div>`;
+                            }
+                        }
+                    ];
+                    
+                    components.renderTable(invoices, columns, 'invoices-table');
+                    components.renderPagination(currentPage, totalPages, 'goToPage');
+                }
+            } catch (error) {
+                console.error('Error loading invoices:', error);
+                utils.showToast('Failed to load invoices', 'error');
+            } finally {
+                utils.hideLoading();
+            }
+        }
+
+        window.goToPage = function(page) {
+            currentPage = page;
+            loadInvoices();
+        };
+
+        document.getElementById('status-filter').addEventListener('change', () => {
+            currentPage = 1;
+            loadInvoices();
+        });
+
+        loadInvoices();
+    </script>
+</body>
+</html>
