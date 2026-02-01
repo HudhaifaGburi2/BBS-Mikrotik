@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using BroadbandBilling.Domain.Entities;
+using BroadbandBilling.Infrastructure.Data.Seeders;
 using System.Reflection;
 
 namespace BroadbandBilling.Infrastructure.Data;
@@ -25,5 +26,7 @@ public class ApplicationDbContext : DbContext
         base.OnModelCreating(modelBuilder);
 
         modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
+
+        DataSeeder.SeedData(modelBuilder);
     }
 }
