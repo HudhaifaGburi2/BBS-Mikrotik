@@ -85,7 +85,7 @@ const api = {
             }
             return { success: true };
         } catch (error) {
-            console.error('API GET Error:', error);
+            console.error('خطأ في API GET:', error);
             throw error;
         }
     },
@@ -117,13 +117,29 @@ const api = {
             }
 
             if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.message || 'Request failed');
+                let errorMessage = 'فشل الطلب';
+                try {
+                    const contentType = response.headers.get('content-type');
+                    if (contentType && contentType.includes('application/json')) {
+                        const error = await response.json();
+                        errorMessage = error.message || error.errors?.[0] || errorMessage;
+                    } else {
+                        const text = await response.text();
+                        errorMessage = text || errorMessage;
+                    }
+                } catch (e) {
+                    console.error('خطأ في تحليل استجابة الخطأ:', e);
+                }
+                throw new Error(errorMessage);
             }
 
             return await response.json();
         } catch (error) {
-            console.error('API POST Error:', error);
+            console.error('خطأ في API POST:', error);
+            // Network error or CORS issue
+            if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                throw new Error('فشل الاتصال بالخادم. تأكد من تشغيل الخادم على http://localhost:5286');
+            }
             throw error;
         }
     },
@@ -208,13 +224,25 @@ const api = {
             }
 
             if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.message || 'Request failed');
+                let errorMessage = 'فشل الطلب';
+                try {
+                    const contentType = response.headers.get('content-type');
+                    if (contentType && contentType.includes('application/json')) {
+                        const error = await response.json();
+                        errorMessage = error.message || error.errors?.[0] || errorMessage;
+                    } else {
+                        const text = await response.text();
+                        errorMessage = text || errorMessage;
+                    }
+                } catch (e) {
+                    console.error('خطأ في تحليل استجابة الخطأ:', e);
+                }
+                throw new Error(errorMessage);
             }
 
             return await response.json();
         } catch (error) {
-            console.error('API DELETE Error:', error);
+            console.error('خطأ في API DELETE:', error);
             throw error;
         }
     }
