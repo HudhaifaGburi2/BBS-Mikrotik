@@ -23,13 +23,13 @@ public class LoginHistoryConfiguration : IEntityTypeConfiguration<LoginHistory>
             .HasMaxLength(20);
         
         builder.Property(l => l.FailureReason)
-            .HasMaxLength(200);
+            .HasColumnType("NVARCHAR(200)");
         
         builder.Property(l => l.IpAddress)
             .HasMaxLength(50);
         
         builder.Property(l => l.DeviceName)
-            .HasMaxLength(200);
+            .HasColumnType("NVARCHAR(200)");
         
         builder.Property(l => l.Browser)
             .HasMaxLength(100);
@@ -38,7 +38,7 @@ public class LoginHistoryConfiguration : IEntityTypeConfiguration<LoginHistory>
             .HasMaxLength(100);
         
         builder.Property(l => l.Location)
-            .HasMaxLength(200);
+            .HasColumnType("NVARCHAR(200)");
         
         // Indexes
         builder.HasIndex(l => l.UserId);
