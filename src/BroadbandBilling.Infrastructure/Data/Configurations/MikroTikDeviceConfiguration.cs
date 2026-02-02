@@ -14,7 +14,7 @@ public class MikroTikDeviceConfiguration : IEntityTypeConfiguration<MikroTikDevi
 
         builder.Property(m => m.Name)
             .IsRequired()
-            .HasMaxLength(100);
+            .HasColumnType("NVARCHAR(100)");
 
         builder.OwnsOne(m => m.IpAddress, ip =>
         {
@@ -29,7 +29,7 @@ public class MikroTikDeviceConfiguration : IEntityTypeConfiguration<MikroTikDevi
 
         builder.Property(m => m.Username)
             .IsRequired()
-            .HasMaxLength(100);
+            .HasColumnType("NVARCHAR(100)");
 
         builder.Property(m => m.Password)
             .IsRequired()
@@ -39,7 +39,7 @@ public class MikroTikDeviceConfiguration : IEntityTypeConfiguration<MikroTikDevi
             .IsRequired();
 
         builder.Property(m => m.Location)
-            .HasMaxLength(200);
+            .HasColumnType("NVARCHAR(200)");
 
         builder.Property(m => m.LastConnectedAt);
 
