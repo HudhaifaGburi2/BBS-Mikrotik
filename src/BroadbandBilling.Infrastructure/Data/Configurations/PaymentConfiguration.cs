@@ -20,7 +20,7 @@ public class PaymentConfiguration : IEntityTypeConfiguration<Payment>
 
         builder.Property(p => p.PaymentReference)
             .IsRequired()
-            .HasMaxLength(100);
+            .HasColumnType("NVARCHAR(100)");
 
         builder.OwnsOne(p => p.Amount, money =>
         {
@@ -47,10 +47,10 @@ public class PaymentConfiguration : IEntityTypeConfiguration<Payment>
             .IsRequired();
 
         builder.Property(p => p.TransactionId)
-            .HasMaxLength(200);
+            .HasColumnType("NVARCHAR(200)");
 
         builder.Property(p => p.Notes)
-            .HasMaxLength(1000);
+            .HasColumnType("NVARCHAR(1000)");
 
         builder.Property(p => p.CreatedAt)
             .IsRequired();
