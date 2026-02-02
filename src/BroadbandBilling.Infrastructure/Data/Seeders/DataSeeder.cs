@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using BroadbandBilling.Domain.Entities;
+using BroadbandBilling.Domain.Enums;
 
 namespace BroadbandBilling.Infrastructure.Data.Seeders;
 
@@ -7,9 +8,11 @@ public static class DataSeeder
 {
     public static void SeedData(ModelBuilder modelBuilder)
     {
+        // Admin user seeding removed - create admin manually via SQL script
         SeedPlans(modelBuilder);
         SeedMikroTikDevices(modelBuilder);
     }
+
 
     private static void SeedPlans(ModelBuilder modelBuilder)
     {
