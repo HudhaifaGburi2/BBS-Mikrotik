@@ -33,8 +33,7 @@ namespace BroadbandBilling.Infrastructure.Data.Migrations
 
                     b.Property<string>("FullName")
                         .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
+                        .HasColumnType("NVARCHAR(200)");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
@@ -44,8 +43,7 @@ namespace BroadbandBilling.Infrastructure.Data.Migrations
 
                     b.Property<string>("Role")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
+                        .HasColumnType("NVARCHAR(50)");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
@@ -84,8 +82,7 @@ namespace BroadbandBilling.Infrastructure.Data.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<string>("Notes")
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
+                        .HasColumnType("NVARCHAR(1000)");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -130,20 +127,17 @@ namespace BroadbandBilling.Infrastructure.Data.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<string>("DeviceName")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
+                        .HasColumnType("NVARCHAR(200)");
 
                     b.Property<string>("FailureReason")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
+                        .HasColumnType("NVARCHAR(200)");
 
                     b.Property<string>("IpAddress")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
                     b.Property<string>("Location")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
+                        .HasColumnType("NVARCHAR(200)");
 
                     b.Property<DateTime>("LoginDate")
                         .HasColumnType("datetime2");
@@ -207,16 +201,14 @@ namespace BroadbandBilling.Infrastructure.Data.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<string>("Location")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
+                        .HasColumnType("NVARCHAR(200)");
 
                     b.Property<int>("MaxUsers")
                         .HasColumnType("int");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                        .HasColumnType("NVARCHAR(100)");
 
                     b.Property<string>("Password")
                         .IsRequired()
@@ -278,8 +270,7 @@ namespace BroadbandBilling.Infrastructure.Data.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Notes")
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
+                        .HasColumnType("NVARCHAR(1000)");
 
                     b.Property<DateTime>("PaymentDate")
                         .HasColumnType("datetime2");
@@ -336,8 +327,7 @@ namespace BroadbandBilling.Infrastructure.Data.Migrations
 
                     b.Property<string>("Description")
                         .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
+                        .HasColumnType("NVARCHAR(500)");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
@@ -349,8 +339,7 @@ namespace BroadbandBilling.Infrastructure.Data.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                        .HasColumnType("NVARCHAR(100)");
 
                     b.Property<int>("SpeedMbps")
                         .HasColumnType("int");
@@ -514,25 +503,21 @@ namespace BroadbandBilling.Infrastructure.Data.Migrations
 
                     b.Property<string>("Address")
                         .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
+                        .HasColumnType("NVARCHAR(500)");
 
                     b.Property<string>("City")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                        .HasColumnType("NVARCHAR(100)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("Email")
                         .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                        .HasColumnType("NVARCHAR(100)");
 
                     b.Property<string>("FullName")
                         .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
+                        .HasColumnType("NVARCHAR(200)");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
@@ -591,8 +576,7 @@ namespace BroadbandBilling.Infrastructure.Data.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<string>("CancellationReason")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
+                        .HasColumnType("NVARCHAR(500)");
 
                     b.Property<DateTime?>("CancelledAt")
                         .HasColumnType("datetime2");
@@ -698,8 +682,7 @@ namespace BroadbandBilling.Infrastructure.Data.Migrations
 
                     b.Property<string>("Email")
                         .IsRequired()
-                        .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
+                        .HasColumnType("NVARCHAR(256)");
 
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("bit");
@@ -719,19 +702,16 @@ namespace BroadbandBilling.Infrastructure.Data.Migrations
 
                     b.Property<string>("PasswordHash")
                         .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
+                        .HasColumnType("NVARCHAR(500)");
 
                     b.Property<string>("PhoneNumber")
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
+                        .HasColumnType("NVARCHAR(20)");
 
                     b.Property<bool>("PhoneNumberConfirmed")
                         .HasColumnType("bit");
 
                     b.Property<string>("RefreshToken")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
+                        .HasColumnType("NVARCHAR(500)");
 
                     b.Property<DateTime?>("RefreshTokenExpiryTime")
                         .HasColumnType("datetime2");
@@ -747,13 +727,11 @@ namespace BroadbandBilling.Infrastructure.Data.Migrations
 
                     b.Property<string>("UserType")
                         .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
+                        .HasColumnType("NVARCHAR(20)");
 
                     b.Property<string>("Username")
                         .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                        .HasColumnType("NVARCHAR(100)");
 
                     b.HasKey("Id");
 
@@ -814,7 +792,7 @@ namespace BroadbandBilling.Infrastructure.Data.Migrations
 
                             b1.HasKey("InvoiceId");
 
-                            b1.ToTable("Invoices");
+                            b1.ToTable("Invoices", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("InvoiceId");
@@ -838,7 +816,7 @@ namespace BroadbandBilling.Infrastructure.Data.Migrations
 
                             b1.HasKey("InvoiceId");
 
-                            b1.ToTable("Invoices");
+                            b1.ToTable("Invoices", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("InvoiceId");
@@ -862,7 +840,7 @@ namespace BroadbandBilling.Infrastructure.Data.Migrations
 
                             b1.HasKey("InvoiceId");
 
-                            b1.ToTable("Invoices");
+                            b1.ToTable("Invoices", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("InvoiceId");
@@ -886,7 +864,7 @@ namespace BroadbandBilling.Infrastructure.Data.Migrations
 
                             b1.HasKey("InvoiceId");
 
-                            b1.ToTable("Invoices");
+                            b1.ToTable("Invoices", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("InvoiceId");
@@ -910,7 +888,7 @@ namespace BroadbandBilling.Infrastructure.Data.Migrations
 
                             b1.HasKey("InvoiceId");
 
-                            b1.ToTable("Invoices");
+                            b1.ToTable("Invoices", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("InvoiceId");
@@ -962,7 +940,7 @@ namespace BroadbandBilling.Infrastructure.Data.Migrations
 
                             b1.HasKey("MikroTikDeviceId");
 
-                            b1.ToTable("MikroTikDevices");
+                            b1.ToTable("MikroTikDevices", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("MikroTikDeviceId");
@@ -1011,7 +989,7 @@ namespace BroadbandBilling.Infrastructure.Data.Migrations
 
                             b1.HasKey("PaymentId");
 
-                            b1.ToTable("Payments");
+                            b1.ToTable("Payments", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("PaymentId");
@@ -1045,7 +1023,7 @@ namespace BroadbandBilling.Infrastructure.Data.Migrations
 
                             b1.HasKey("PlanId");
 
-                            b1.ToTable("Plans");
+                            b1.ToTable("Plans", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("PlanId");
@@ -1118,7 +1096,7 @@ namespace BroadbandBilling.Infrastructure.Data.Migrations
 
                             b1.HasKey("PppoeAccountId");
 
-                            b1.ToTable("PppoeAccounts");
+                            b1.ToTable("PppoeAccounts", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("PppoeAccountId");
@@ -1162,7 +1140,7 @@ namespace BroadbandBilling.Infrastructure.Data.Migrations
 
                             b1.HasKey("SubscriptionId");
 
-                            b1.ToTable("Subscriptions");
+                            b1.ToTable("Subscriptions", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("SubscriptionId");
@@ -1209,7 +1187,7 @@ namespace BroadbandBilling.Infrastructure.Data.Migrations
 
                             b1.HasKey("UsageLogId");
 
-                            b1.ToTable("UsageLogs");
+                            b1.ToTable("UsageLogs", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("UsageLogId");
