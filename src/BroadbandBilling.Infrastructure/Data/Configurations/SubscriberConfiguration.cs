@@ -14,11 +14,11 @@ public class SubscriberConfiguration : IEntityTypeConfiguration<Subscriber>
 
         builder.Property(s => s.FullName)
             .IsRequired()
-            .HasMaxLength(200);
+            .HasColumnType("NVARCHAR(200)");
 
         builder.Property(s => s.Email)
             .IsRequired()
-            .HasMaxLength(100);
+            .HasColumnType("NVARCHAR(100)");
 
         builder.Property(s => s.PhoneNumber)
             .IsRequired()
@@ -26,16 +26,16 @@ public class SubscriberConfiguration : IEntityTypeConfiguration<Subscriber>
 
         builder.Property(s => s.Address)
             .IsRequired()
-            .HasMaxLength(500);
+            .HasColumnType("NVARCHAR(500)");
 
         builder.Property(s => s.NationalId)
-            .HasMaxLength(50);
+            .HasColumnType("NVARCHAR(50)");
         
         builder.Property(s => s.City)
-            .HasMaxLength(100);
+            .HasColumnType("NVARCHAR(100)");
         
         builder.Property(s => s.PostalCode)
-            .HasMaxLength(20);
+            .HasColumnType("NVARCHAR(20)");
 
         builder.Property(s => s.IsActive)
             .IsRequired();
