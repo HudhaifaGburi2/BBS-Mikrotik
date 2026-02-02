@@ -38,7 +38,7 @@ public class PppoeAccountConfiguration : IEntityTypeConfiguration<PppoeAccount>
 
         builder.Property(p => p.ProfileName)
             .IsRequired()
-            .HasMaxLength(100);
+            .HasColumnType("NVARCHAR(100)");
 
         builder.Property(p => p.IsEnabled)
             .IsRequired();
