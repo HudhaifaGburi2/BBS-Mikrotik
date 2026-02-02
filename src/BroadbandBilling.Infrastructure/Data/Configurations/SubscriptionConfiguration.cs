@@ -40,7 +40,7 @@ public class SubscriptionConfiguration : IEntityTypeConfiguration<Subscription>
         builder.Property(s => s.CancelledAt);
 
         builder.Property(s => s.CancellationReason)
-            .HasMaxLength(500);
+            .HasColumnType("NVARCHAR(500)");
 
         builder.Property(s => s.CreatedAt)
             .IsRequired();
