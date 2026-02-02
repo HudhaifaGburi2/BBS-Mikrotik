@@ -6,7 +6,6 @@ using Hangfire;
 using BroadbandBilling.Application;
 using BroadbandBilling.Infrastructure;
 using BroadbandBilling.API.Middleware;
-using Swashbuckle.AspNetCore.SwaggerGen;
 using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);

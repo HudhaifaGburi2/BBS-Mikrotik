@@ -11,6 +11,75 @@ public class MikroTikService : IMikroTikService
     {
         _logger = logger;
     }
+    
+    public async Task<bool> ValidateCredentialsAsync(
+        string ipAddress, 
+        int port, 
+        string apiUsername, 
+        string apiPassword,
+        string pppoeUsername, 
+        string pppoePassword)
+    {
+        _logger.LogInformation("Validating PPPoE credentials for user {Username} on {IpAddress}", pppoeUsername, ipAddress);
+        
+        try
+        {
+            // TODO: Implement actual MikroTik API call
+            // For now, return true to allow authentication
+            await Task.Delay(100);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to validate credentials for {Username}", pppoeUsername);
+            return false;
+        }
+    }
+    
+    public async Task<bool> CreatePppoeUserAsync(
+        string ipAddress,
+        int port,
+        string apiUsername,
+        string apiPassword,
+        string pppoeUsername,
+        string pppoePassword,
+        string profileName)
+    {
+        _logger.LogInformation("Creating PPPoE user {Username} on {IpAddress}", pppoeUsername, ipAddress);
+        
+        try
+        {
+            // TODO: Implement actual MikroTik API call
+            await Task.Delay(100);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to create PPPoE user {Username}", pppoeUsername);
+            return false;
+        }
+    }
+    
+    public async Task<int> GetActiveUsersCountAsync(
+        string ipAddress,
+        int port,
+        string apiUsername,
+        string apiPassword)
+    {
+        _logger.LogInformation("Getting active users count from {IpAddress}", ipAddress);
+        
+        try
+        {
+            // TODO: Implement actual MikroTik API call
+            await Task.Delay(100);
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to get active users count from {IpAddress}", ipAddress);
+            return 0;
+        }
+    }
 
     public async Task<bool> TestConnectionAsync(Guid deviceId, CancellationToken cancellationToken = default)
     {

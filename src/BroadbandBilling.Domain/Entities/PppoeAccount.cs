@@ -14,8 +14,19 @@ public class PppoeAccount : IEntity
     public IpAddress? StaticIpAddress { get; private set; }
     public string ProfileName { get; private set; }
     public bool IsEnabled { get; private set; }
+    
+    // MikroTik Sync Status
+    public bool IsSyncedWithMikroTik { get; private set; }
+    public DateTime? LastSyncDate { get; private set; }
+    public DateTime? LastValidationDate { get; private set; }
+    public ValidationStatus ValidationStatus { get; private set; }
+    
+    // Connection Details
+    public string? MacAddress { get; private set; }
     public DateTime? LastConnectedAt { get; private set; }
     public DateTime? LastDisconnectedAt { get; private set; }
+    public int TotalSessions { get; private set; }
+    
     public DateTime CreatedAt { get; private set; }
     public DateTime? UpdatedAt { get; private set; }
 
@@ -139,4 +150,47 @@ public class PppoeAccount : IEntity
         var endTime = LastDisconnectedAt ?? DateTime.UtcNow;
         return endTime - LastConnectedAt.Value;
     }
+    
+    public void MarkAsValidated(bool isValid)
+    {
+        ValidationStatus = isValid ? ValidationStatus.Valid : ValidationStatus.Invalid;
+        LastValidationDate = DateTime.UtcNow;
+        UpdatedAt = DateTime.UtcNow;
+    }
+    
+    public void MarkAsSynced()
+    {
+        IsSyncedWithMikroTik = true;
+        LastSyncDate = DateTime.UtcNow;
+        ValidationStatus = ValidationStatus.Valid;
+        UpdatedAt = DateTime.UtcNow;
+    }
+    
+    public void MarkAsSyncFailed()
+    {
+        IsSyncedWithMikroTik = false;
+        ValidationStatus = ValidationStatus.Invalid;
+        UpdatedAt = DateTime.UtcNow;
+    }
+    
+    public void SetMacAddress(string macAddress)
+    {
+        MacAddress = macAddress;
+        UpdatedAt = DateTime.UtcNow;
+    }
+    
+    public void IncrementSessionCount()
+    {
+        TotalSessions++;
+        UpdatedAt = DateTime.UtcNow;
+    }
+}
+
+public enum ValidationStatus
+{
+    Pending,
+    Valid,
+    Invalid,
+    NotFound,
+    Disabled
 }

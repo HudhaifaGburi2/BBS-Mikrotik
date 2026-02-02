@@ -13,7 +13,17 @@ public class MikroTikDevice : IEntity
     public string Password { get; private set; }
     public bool IsActive { get; private set; }
     public string? Location { get; private set; }
+    public string? Description { get; private set; }
+    
+    // Connection Status
+    public bool IsOnline { get; private set; }
+    public DateTime? LastPingDate { get; private set; }
     public DateTime? LastConnectedAt { get; private set; }
+    
+    // Capacity
+    public int MaxUsers { get; private set; }
+    public int CurrentActiveUsers { get; private set; }
+    
     public DateTime CreatedAt { get; private set; }
     public DateTime? UpdatedAt { get; private set; }
 

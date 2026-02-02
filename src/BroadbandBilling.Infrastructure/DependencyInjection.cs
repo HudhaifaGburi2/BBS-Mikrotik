@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using BroadbandBilling.Application.Common.Interfaces;
+using BroadbandBilling.Application.Interfaces;
 using BroadbandBilling.Infrastructure.Data;
 using BroadbandBilling.Infrastructure.Repositories;
 using BroadbandBilling.Infrastructure.Services;
@@ -35,7 +36,8 @@ public static class DependencyInjection
         services.AddScoped<IMikroTikService, MikroTikService>();
         services.AddScoped<IEmailService, EmailService>();
         services.AddScoped<ISmsService, SmsService>();
-
+        services.AddScoped<BroadbandBilling.Application.Interfaces.IPasswordHasher, PasswordHasher>();
+        services.AddScoped<BroadbandBilling.Application.Interfaces.IJwtTokenService, JwtTokenService>();
         services.AddScoped<BillingCycleJob>();
         services.AddScoped<SuspendExpiredSubscriptionsJob>();
         services.AddScoped<UsageSyncJob>();

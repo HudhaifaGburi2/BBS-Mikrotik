@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Invoices - Broadband Billing System</title>
+    <title>فواتيري - نظام فواتير الإنترنت</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100">
@@ -14,7 +14,7 @@
                     <a href="dashboard.html" class="text-xl font-bold text-blue-600">Broadband Portal</a>
                 </div>
                 <div class="flex items-center space-x-4">
-                    <a href="dashboard.html" class="text-sm text-gray-700 hover:text-blue-600">Dashboard</a>
+                    <a href="dashboard.html" class="text-sm text-gray-700 hover:text-blue-600">لوحة التحكم</a>
                     <button onclick="auth.logout()" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm">
                         Logout
                     </button>
@@ -34,10 +34,10 @@
                 <div>
                     <label for="status-filter" class="block text-sm font-medium text-gray-700 mb-2">Filter by Status</label>
                     <select id="status-filter" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                        <option value="">All Invoices</option>
+                        <option value="">جميع الفواتير</option>
                         <option value="Pending">Pending</option>
-                        <option value="Paid">Paid</option>
-                        <option value="Overdue">Overdue</option>
+                        <option value="Paid">مدفوع</option>
+                        <option value="Overdue">متأخر</option>
                     </select>
                 </div>
 
@@ -123,10 +123,10 @@
                             label: 'Actions', 
                             field: 'id',
                             render: (row) => {
-                                const viewButton = `<a href="../admin/invoice-detail.html?id=${row.id}" target="_blank" class="text-blue-600 hover:text-blue-800 mr-3">View</a>`;
+                                const viewButton = `<a href="../admin/invoice-detail.html?id=${row.id}" target="_blank" class="text-blue-600 hover:text-blue-800 mr-3">عرض</a>`;
                                 const payButton = row.status !== 'Paid' ? 
                                     `<a href="payment.html?invoiceId=${row.id}" class="text-green-600 hover:text-green-800">Pay Now</a>` : 
-                                    '<span class="text-gray-400">Paid</span>';
+                                    '<span class="text-gray-400">مدفوع</span>';
                                 return `<div class="flex items-center space-x-3">${viewButton}${payButton}</div>`;
                             }
                         }

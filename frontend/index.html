@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Broadband Billing System</title>
+    <title>تسجيل الدخول - نظام فواتير الإنترنت</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="min-h-screen bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-700">
@@ -16,14 +16,14 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"></path>
                         </svg>
                     </div>
-                    <h2 class="text-3xl font-bold text-gray-900">Welcome Back</h2>
-                    <p class="text-gray-600 mt-2">Sign in to your account</p>
+                    <h2 class="text-3xl font-bold text-gray-900">مرحباً بعودتك</h2>
+                    <p class="text-gray-600 mt-2">تسجيل الدخول إلى حسابك</p>
                 </div>
 
                 <form id="login-form" class="space-y-6">
                     <div>
                         <label for="username" class="block text-sm font-medium text-gray-700 mb-2">
-                            Username or Email
+                            اسم المستخدم أو البريد الإلكتروني
                         </label>
                         <input 
                             type="text" 
@@ -32,12 +32,12 @@
                             required
                             autocomplete="username"
                             class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                            placeholder="Enter your username">
+                            placeholder="أدخل اسم المستخدم">
                     </div>
 
                     <div>
                         <label for="password" class="block text-sm font-medium text-gray-700 mb-2">
-                            Password
+                            كلمة المرور
                         </label>
                         <input 
                             type="password" 
@@ -46,7 +46,7 @@
                             required
                             autocomplete="current-password"
                             class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                            placeholder="Enter your password">
+                            placeholder="أدخل كلمة المرور">
                     </div>
 
                     <div class="flex items-center justify-between">
@@ -57,32 +57,32 @@
                                 name="remember"
                                 class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
                             <label for="remember" class="ml-2 block text-sm text-gray-700">
-                                Remember me
+                                تذكرني
                             </label>
                         </div>
                         <a href="#" class="text-sm font-medium text-blue-600 hover:text-blue-500">
-                            Forgot password?
+                            نسيت كلمة المرور؟
                         </a>
                     </div>
 
                     <button 
                         type="submit" 
                         class="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors">
-                        Sign In
+                        تسجيل الدخول
                     </button>
                 </form>
 
                 <div class="mt-6 text-center">
                     <p class="text-sm text-gray-600">
-                        Don't have an account? 
-                        <a href="#" class="font-medium text-blue-600 hover:text-blue-500">Contact Administrator</a>
+                        ليس لديك حساب؟ 
+                        <a href="#" class="font-medium text-blue-600 hover:text-blue-500">اتصل بالمسؤول</a>
                     </p>
                 </div>
             </div>
 
             <div class="text-center mt-6">
                 <p class="text-white text-sm">
-                    &copy; 2024 Broadband Billing System. All rights reserved.
+                    &copy; 2026 نظام فواتير الإنترنت. جميع الحقوق محفوظة.
                 </p>
             </div>
         </div>
@@ -95,7 +95,7 @@
     <script>
         if (auth.isAuthenticated()) {
             const user = auth.getUser();
-            if (user && user.role === 'Admin') {
+            if (user && user.userType === 'Admin') {
                 window.location.href = '/admin/dashboard.html';
             } else {
                 window.location.href = '/client/dashboard.html';
@@ -107,23 +107,25 @@
             
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
+            const rememberMe = document.getElementById('remember').checked;
 
             if (!username || !password) {
-                utils.showToast('Please enter both username and password', 'error');
+                utils.showToast('الرجاء إدخال اسم المستخدم وكلمة المرور', 'error');
                 return;
             }
 
             try {
                 utils.showLoading();
                 
-                const success = await auth.login(username, password);
+                // Try to login - backend will determine user type
+                const success = await auth.login(username, password, rememberMe);
                 
                 if (success) {
-                    utils.showToast('Login successful! Redirecting...', 'success');
+                    utils.showToast('تم تسجيل الدخول بنجاح! جاري التحويل...', 'success');
                     
                     setTimeout(() => {
                         const user = auth.getUser();
-                        if (user && user.role === 'Admin') {
+                        if (user && user.userType === 'Admin') {
                             window.location.href = '/admin/dashboard.html';
                         } else {
                             window.location.href = '/client/dashboard.html';
@@ -131,7 +133,7 @@
                     }, 1000);
                 }
             } catch (error) {
-                utils.showToast(error.message || 'Login failed. Please check your credentials.', 'error');
+                utils.showToast(error.message || 'فشل تسجيل الدخول. الرجاء التحقق من بيانات الاعتماد.', 'error');
             } finally {
                 utils.hideLoading();
             }

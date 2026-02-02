@@ -1,4 +1,4 @@
-const API_BASE_URL = 'https://localhost:7001/api';
+const API_BASE_URL = 'http://localhost:5286/api';
 
 const apiCache = {
     data: new Map(),
@@ -61,13 +61,29 @@ const api = {
             }
 
             if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.message || 'Request failed');
+                let errorMessage = 'فشل الطلب';
+                try {
+                    const contentType = response.headers.get('content-type');
+                    if (contentType && contentType.includes('application/json')) {
+                        const error = await response.json();
+                        errorMessage = error.message || error.title || errorMessage;
+                    } else {
+                        const text = await response.text();
+                        errorMessage = text || errorMessage;
+                    }
+                } catch (e) {
+                    console.error('خطأ في تحليل استجابة الخطأ:', e);
+                }
+                throw new Error(errorMessage);
             }
 
-            const result = await response.json();
-            apiCache.set(cacheKey, result);
-            return result;
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+                const result = await response.json();
+                apiCache.set(cacheKey, result);
+                return result;
+            }
+            return { success: true };
         } catch (error) {
             console.error('API GET Error:', error);
             throw error;
@@ -139,13 +155,29 @@ const api = {
             }
 
             if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.message || 'Request failed');
+                let errorMessage = 'فشل الطلب';
+                try {
+                    const contentType = response.headers.get('content-type');
+                    if (contentType && contentType.includes('application/json')) {
+                        const error = await response.json();
+                        errorMessage = error.message || error.title || errorMessage;
+                    } else {
+                        const text = await response.text();
+                        errorMessage = text || errorMessage;
+                    }
+                } catch (e) {
+                    console.error('خطأ في تحليل استجابة الخطأ:', e);
+                }
+                throw new Error(errorMessage);
             }
 
-            return await response.json();
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+                return await response.json();
+            }
+            return { success: true };
         } catch (error) {
-            console.error('API PUT Error:', error);
+            console.error('خطأ في API PUT:', error);
             throw error;
         }
     },

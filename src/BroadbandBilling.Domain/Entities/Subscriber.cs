@@ -5,17 +5,30 @@ namespace BroadbandBilling.Domain.Entities;
 public class Subscriber : IEntity
 {
     public Guid Id { get; private set; }
+    public Guid UserId { get; private set; }
     public string FullName { get; private set; }
     public string Email { get; private set; }
     public string PhoneNumber { get; private set; }
     public string Address { get; private set; }
     public string? NationalId { get; private set; }
+    public string? City { get; private set; }
+    public string? PostalCode { get; private set; }
     public bool IsActive { get; private set; }
+    
+    // Device Information
+    public string? LastLoginDevice { get; private set; }
+    public string? LastLoginBrowser { get; private set; }
+    public string? LastLoginOS { get; private set; }
+    
     public DateTime CreatedAt { get; private set; }
     public DateTime? UpdatedAt { get; private set; }
 
+    // Navigation Properties
+    public User? User { get; set; }
     private readonly List<Subscription> _subscriptions = new();
     public IReadOnlyCollection<Subscription> Subscriptions => _subscriptions.AsReadOnly();
+    private readonly List<PppoeAccount> _pppoeAccounts = new();
+    public IReadOnlyCollection<PppoeAccount> PppoeAccounts => _pppoeAccounts.AsReadOnly();
 
     private Subscriber() { }
 
@@ -91,5 +104,13 @@ public class Subscriber : IEntity
     public Subscription? GetActiveSubscription()
     {
         return _subscriptions.FirstOrDefault(s => s.IsActive());
+    }
+    
+    public void UpdateDeviceInfo(string? deviceName, string? browser, string? os)
+    {
+        LastLoginDevice = deviceName;
+        LastLoginBrowser = browser;
+        LastLoginOS = os;
+        UpdatedAt = DateTime.UtcNow;
     }
 }

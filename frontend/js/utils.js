@@ -135,7 +135,7 @@ const utils = {
 
             if (!input.value.trim()) {
                 const label = input.parentElement.querySelector('label')?.textContent || input.name;
-                const error = `${label.replace('*', '').trim()} is required`;
+                const error = `${label.replace('*', '').trim()} مطلوب`;
                 errors.push({ field: input.name, message: error });
                 
                 if (errorElement) {
@@ -148,7 +148,7 @@ const utils = {
             }
 
             if (input.type === 'email' && input.value && !this.validateEmail(input.value)) {
-                const error = 'Please enter a valid email address';
+                const error = 'الرجاء إدخال عنوان بريد إلكتروني صحيح';
                 errors.push({ field: input.name, message: error });
                 
                 if (errorElement) {
@@ -159,7 +159,7 @@ const utils = {
             }
 
             if (input.type === 'tel' && input.value && !this.validatePhone(input.value)) {
-                const error = 'Please enter a valid phone number';
+                const error = 'الرجاء إدخال رقم هاتف صحيح';
                 errors.push({ field: input.name, message: error });
                 
                 if (errorElement) {
@@ -175,7 +175,7 @@ const utils = {
                 const value = parseFloat(input.value);
 
                 if (min && value < parseFloat(min)) {
-                    const error = `Value must be at least ${min}`;
+                    const error = `يجب أن تكون القيمة على الأقل ${min}`;
                     errors.push({ field: input.name, message: error });
                     
                     if (errorElement) {
@@ -186,7 +186,7 @@ const utils = {
                 }
 
                 if (max && value > parseFloat(max)) {
-                    const error = `Value must be at most ${max}`;
+                    const error = `يجب ألا تتجاوز القيمة ${max}`;
                     errors.push({ field: input.name, message: error });
                     
                     if (errorElement) {

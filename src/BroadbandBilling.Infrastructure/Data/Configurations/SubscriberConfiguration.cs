@@ -30,6 +30,12 @@ public class SubscriberConfiguration : IEntityTypeConfiguration<Subscriber>
 
         builder.Property(s => s.NationalId)
             .HasMaxLength(50);
+        
+        builder.Property(s => s.City)
+            .HasMaxLength(100);
+        
+        builder.Property(s => s.PostalCode)
+            .HasMaxLength(20);
 
         builder.Property(s => s.IsActive)
             .IsRequired();
@@ -39,11 +45,12 @@ public class SubscriberConfiguration : IEntityTypeConfiguration<Subscriber>
 
         builder.Property(s => s.UpdatedAt);
 
-        builder.HasIndex(s => s.Email)
-            .IsUnique();
-
+        builder.HasIndex(s => s.UserId).IsUnique();
+        builder.HasIndex(s => s.Email);
         builder.HasIndex(s => s.PhoneNumber);
-
+        builder.HasIndex(s => s.NationalId);
         builder.HasIndex(s => s.IsActive);
+        
+        // Relationship configured in UserConfiguration
     }
 }

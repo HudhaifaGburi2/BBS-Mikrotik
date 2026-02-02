@@ -1,27 +1,66 @@
 const auth = {
-    async login(username, password) {
+    async login(username, password, rememberMe = false) {
+        // Try admin login first
         try {
-            const response = await api.post('/auth/login', {
+            const response = await api.post('/auth/admin/login', {
                 username: username,
-                password: password
+                password: password,
+                rememberMe: rememberMe,
+                deviceName: navigator.userAgent,
+                operatingSystem: navigator.platform
             });
 
-            if (response.data && response.data.token) {
-                localStorage.setItem('authToken', response.data.token);
-                localStorage.setItem('userData', JSON.stringify(response.data.user));
+            if (response.data && response.data.accessToken) {
+                localStorage.setItem('authToken', response.data.accessToken);
+                localStorage.setItem('refreshToken', response.data.refreshToken);
+                localStorage.setItem('userData', JSON.stringify({
+                    userType: response.data.userType,
+                    fullName: response.data.fullName,
+                    role: response.data.role
+                }));
                 return true;
             }
-            
-            throw new Error('Invalid response from server');
-        } catch (error) {
-            throw error;
+        } catch (adminError) {
+            // If admin login fails, try subscriber login
+            try {
+                const response = await api.post('/auth/subscriber/login', {
+                    username: username,
+                    password: password,
+                    rememberMe: rememberMe,
+                    deviceName: navigator.userAgent,
+                    operatingSystem: navigator.platform
+                });
+
+                if (response.data && response.data.accessToken) {
+                    localStorage.setItem('authToken', response.data.accessToken);
+                    localStorage.setItem('refreshToken', response.data.refreshToken);
+                    localStorage.setItem('userData', JSON.stringify({
+                        userType: response.data.userType,
+                        fullName: response.data.fullName,
+                        hasActiveSubscription: response.data.hasActiveSubscription
+                    }));
+                    return true;
+                }
+            } catch (subscriberError) {
+                // If both fail, throw the subscriber error (more likely to be the correct one)
+                throw subscriberError;
+            }
         }
+        
+        throw new Error('استجابة غير صالحة من الخادم');
     },
 
-    logout() {
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('userData');
-        window.location.href = '/index.html';
+    async logout() {
+        try {
+            await api.post('/auth/logout');
+        } catch (error) {
+            console.error('خطأ في تسجيل الخروج:', error);
+        } finally {
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('refreshToken');
+            localStorage.removeItem('userData');
+            window.location.href = '/index.html';
+        }
     },
 
     isAuthenticated() {
@@ -36,7 +75,7 @@ const auth = {
             try {
                 return JSON.parse(userData);
             } catch (error) {
-                console.error('Error parsing user data:', error);
+                console.error('خطأ في تحليل بيانات المستخدم:', error);
                 return null;
             }
         }
@@ -45,6 +84,19 @@ const auth = {
 
     getToken() {
         return localStorage.getItem('authToken');
+    },
+
+    getUserType() {
+        const user = this.getUser();
+        return user ? user.userType : null;
+    },
+
+    isAdmin() {
+        return this.getUserType() === 'Admin';
+    },
+
+    isSubscriber() {
+        return this.getUserType() === 'Subscriber';
     },
 
     getUserRole() {
@@ -66,7 +118,7 @@ const auth = {
         }
         const userRole = this.getUserRole();
         if (userRole !== role) {
-            utils.showToast('Access denied. Insufficient permissions.', 'error');
+            utils.showToast('تم رفض الوصول. صلاحيات غير كافية.', 'error');
             window.location.href = '/index.html';
             return false;
         }
