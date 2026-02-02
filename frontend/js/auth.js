@@ -1,6 +1,6 @@
 const auth = {
     async login(username, password, rememberMe = false) {
-        // Try admin login first
+        // Try admin login first, then subscriber if 401
         try {
             const response = await api.post('/auth/admin/login', {
                 username: username,
@@ -10,40 +10,54 @@ const auth = {
                 operatingSystem: navigator.platform
             });
 
-            if (response.data && response.data.accessToken) {
-                localStorage.setItem('authToken', response.data.accessToken);
-                localStorage.setItem('refreshToken', response.data.refreshToken);
+            if (response && response.accessToken) {
+                localStorage.setItem('authToken', response.accessToken);
+                localStorage.setItem('refreshToken', response.refreshToken);
                 localStorage.setItem('userData', JSON.stringify({
-                    userType: response.data.userType,
-                    fullName: response.data.fullName,
-                    role: response.data.role
+                    userType: response.userType,
+                    fullName: response.fullName,
+                    role: response.role
                 }));
+                
+                // Verify storage
+                console.log('✅ Admin login success - Token stored:', !!localStorage.getItem('authToken'));
+                console.log('✅ User data stored:', localStorage.getItem('userData'));
+                console.log('✅ User data parsed:', JSON.parse(localStorage.getItem('userData')));
                 return true;
             }
         } catch (adminError) {
-            // If admin login fails, try subscriber login
-            try {
-                const response = await api.post('/auth/subscriber/login', {
-                    username: username,
-                    password: password,
-                    rememberMe: rememberMe,
-                    deviceName: navigator.userAgent,
-                    operatingSystem: navigator.platform
-                });
+            // Only try subscriber if admin returned 401 (wrong credentials, not network error)
+            if (adminError.message && !adminError.message.includes('فشل الاتصال')) {
+                try {
+                    const response = await api.post('/auth/subscriber/login', {
+                        username: username,
+                        password: password,
+                        rememberMe: rememberMe,
+                        deviceName: navigator.userAgent,
+                        operatingSystem: navigator.platform
+                    });
 
-                if (response.data && response.data.accessToken) {
-                    localStorage.setItem('authToken', response.data.accessToken);
-                    localStorage.setItem('refreshToken', response.data.refreshToken);
-                    localStorage.setItem('userData', JSON.stringify({
-                        userType: response.data.userType,
-                        fullName: response.data.fullName,
-                        hasActiveSubscription: response.data.hasActiveSubscription
-                    }));
-                    return true;
+                    if (response && response.accessToken) {
+                        localStorage.setItem('authToken', response.accessToken);
+                        localStorage.setItem('refreshToken', response.refreshToken);
+                        localStorage.setItem('userData', JSON.stringify({
+                            userType: response.userType,
+                            fullName: response.fullName,
+                            hasActiveSubscription: response.hasActiveSubscription
+                        }));
+                        
+                        // Verify storage
+                        console.log('✅ Subscriber login success - Token stored:', !!localStorage.getItem('authToken'));
+                        console.log('✅ User data stored:', localStorage.getItem('userData'));
+                        console.log('✅ User data parsed:', JSON.parse(localStorage.getItem('userData')));
+                        return true;
+                    }
+                } catch (subscriberError) {
+                    throw subscriberError;
                 }
-            } catch (subscriberError) {
-                // If both fail, throw the subscriber error (more likely to be the correct one)
-                throw subscriberError;
+            } else {
+                // Network error - don't retry
+                throw adminError;
             }
         }
         
