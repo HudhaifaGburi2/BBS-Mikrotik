@@ -7,6 +7,7 @@ using BroadbandBilling.Application.UseCases.Subscriptions.CreateSubscription;
 using BroadbandBilling.Application.UseCases.Subscriptions.RenewSubscription;
 using BroadbandBilling.Application.UseCases.Billing.GenerateInvoice;
 using BroadbandBilling.Application.UseCases.Billing.ProcessPayment;
+using System.Reflection;
 
 namespace BroadbandBilling.Application;
 
@@ -14,6 +15,9 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
+        // Register MediatR
+        services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly()));
+        
         services.AddScoped<CreateSubscriberHandler>();
         services.AddScoped<GetSubscriberHandler>();
         services.AddScoped<ListSubscribersHandler>();
