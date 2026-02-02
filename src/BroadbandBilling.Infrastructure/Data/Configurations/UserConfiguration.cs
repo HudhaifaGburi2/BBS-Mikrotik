@@ -14,29 +14,29 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         
         builder.Property(u => u.Username)
             .IsRequired()
-            .HasMaxLength(100);
+            .HasColumnType("NVARCHAR(100)");
         
         builder.Property(u => u.Email)
             .IsRequired()
-            .HasMaxLength(256);
+            .HasColumnType("NVARCHAR(256)");
         
         builder.Property(u => u.PasswordHash)
             .IsRequired()
-            .HasMaxLength(500);
+            .HasColumnType("NVARCHAR(500)");
         
         builder.Property(u => u.UserType)
             .IsRequired()
             .HasConversion<string>()
-            .HasMaxLength(20);
+            .HasColumnType("NVARCHAR(20)");
         
         builder.Property(u => u.PhoneNumber)
-            .HasMaxLength(20);
+            .HasColumnType("NVARCHAR(20)");
         
         builder.Property(u => u.LastLoginIpAddress)
             .HasMaxLength(50);
         
         builder.Property(u => u.RefreshToken)
-            .HasMaxLength(500);
+            .HasColumnType("NVARCHAR(500)");
         
         // Indexes
         builder.HasIndex(u => u.Username).IsUnique();
