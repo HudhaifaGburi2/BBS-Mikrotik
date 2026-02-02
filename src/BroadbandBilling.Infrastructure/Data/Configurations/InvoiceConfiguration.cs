@@ -14,7 +14,7 @@ public class InvoiceConfiguration : IEntityTypeConfiguration<Invoice>
 
         builder.Property(i => i.InvoiceNumber)
             .IsRequired()
-            .HasMaxLength(50);
+            .HasColumnType("NVARCHAR(50)");
 
         builder.Property(i => i.SubscriberId)
             .IsRequired();
@@ -97,7 +97,7 @@ public class InvoiceConfiguration : IEntityTypeConfiguration<Invoice>
             .HasConversion<string>();
 
         builder.Property(i => i.Notes)
-            .HasMaxLength(1000);
+            .HasColumnType("NVARCHAR(1000)");
 
         builder.Property(i => i.CreatedAt)
             .IsRequired();
