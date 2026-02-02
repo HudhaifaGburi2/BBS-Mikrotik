@@ -14,12 +14,12 @@ public class AdminConfiguration : IEntityTypeConfiguration<Admin>
         
         builder.Property(a => a.FullName)
             .IsRequired()
-            .HasMaxLength(200);
+            .HasColumnType("NVARCHAR(200)");
         
         builder.Property(a => a.Role)
             .IsRequired()
             .HasConversion<string>()
-            .HasMaxLength(50);
+            .HasColumnType("NVARCHAR(50)");
         
         builder.Property(a => a.Permissions)
             .HasColumnType("NVARCHAR(MAX)");
