@@ -68,6 +68,8 @@ public class User : IEntity
     
     public bool IsLockedOut() => LockoutEnd.HasValue && LockoutEnd.Value > DateTime.UtcNow;
     
+    public bool IsLocked() => IsLockedOut();
+    
     public void RecordSuccessfulLogin(string ipAddress)
     {
         LastLoginDate = DateTime.UtcNow;
