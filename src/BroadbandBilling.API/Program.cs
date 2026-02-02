@@ -113,7 +113,11 @@ if (app.Environment.IsDevelopment())
 
 app.UseSerilogRequestLogging();
 
-app.UseHttpsRedirection();
+// Only use HTTPS redirection in production
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 
 app.UseCors("AllowSpecificOrigins");
 
@@ -126,6 +130,8 @@ var dashboardPath = builder.Configuration["Hangfire:DashboardPath"] ?? "/hangfir
 app.MapHangfireDashboard(dashboardPath);
 
 Log.Information("Starting Broadband Billing API");
+Log.Information("API URL: {Url}", app.Urls.FirstOrDefault() ?? "Not available");
+Log.Information("Environment: {Environment}", app.Environment.EnvironmentName);
 
 try
 {
