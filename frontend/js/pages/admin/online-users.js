@@ -82,11 +82,19 @@
                     { 
                         label: 'Actions', 
                         field: 'username',
-                        render: (row) => '<button onclick="disconnectUser(\'' + (row.username || row.id) + '\')" class="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition-colors">Disconnect</button>'
+                        render: (row) => '<button data-action="disconnect" data-username="' + (row.username || row.id) + '" class="disconnect-btn px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition-colors">Disconnect</button>'
                     }
                 ];
                 
                 components.renderTable(onlineUsers, columns, 'online-users-table');
+                
+                // Attach event listeners for disconnect buttons
+                document.querySelectorAll('.disconnect-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const username = btn.dataset.username;
+                        if (username) disconnectUser(username);
+                    });
+                });
             }
         } catch (error) {
             console.error('Error fetching online users:', error);

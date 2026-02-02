@@ -1,72 +1,76 @@
 // Login page initialization
 (function() {
-    console.log('🔍 Checking authentication on login page load...');
+    'use strict';
+    
+    // Check if already authenticated - redirect immediately without reload loop
     if (auth.isAuthenticated()) {
         const user = auth.getUser();
-        console.log('✅ User already authenticated:', user);
-        if (user && user.userType === 'Admin') {
-            console.log('→ Redirecting to admin dashboard');
-            window.location.replace('/admin/dashboard.html');
-        } else {
-            console.log('→ Redirecting to client dashboard');
-            window.location.replace('/client/dashboard.html');
-        }
-    } else {
-        console.log('ℹ️ Not authenticated - showing login form');
+        const targetUrl = (user && user.userType === 'Admin') 
+            ? '/admin/dashboard.html' 
+            : '/client/dashboard.html';
+        window.location.replace(targetUrl);
+        return; // Stop execution - page will redirect
     }
 
-    document.getElementById('login-form').addEventListener('submit', async (e) => {
+    const loginForm = document.getElementById('login-form');
+    const usernameInput = document.getElementById('username');
+    const passwordInput = document.getElementById('password');
+    const rememberCheckbox = document.getElementById('remember');
+    
+    let isSubmitting = false;
+
+    async function handleLogin(e) {
+        // Prevent default form submission
         e.preventDefault();
+        e.stopPropagation();
         
-        const username = document.getElementById('username').value;
-        const password = document.getElementById('password').value;
-        const rememberMe = document.getElementById('remember').checked;
+        // Prevent double submission
+        if (isSubmitting) return;
+        
+        const username = usernameInput.value.trim();
+        const password = passwordInput.value;
+        const rememberMe = rememberCheckbox ? rememberCheckbox.checked : false;
 
         if (!username || !password) {
             utils.showToast('الرجاء إدخال اسم المستخدم وكلمة المرور', 'error');
             return;
         }
 
+        isSubmitting = true;
+        
         try {
             utils.showLoading();
             
-            const success = await auth.login(username, password, rememberMe);
+            const result = await auth.login(username, password, rememberMe);
             
-            if (success) {
-                console.log('✅ Login successful, verifying storage...');
-                
-                const storedToken = localStorage.getItem('authToken');
-                const storedUser = localStorage.getItem('userData');
-                
-                if (storedToken && storedUser) {
-                    console.log('✅ Storage verified, showing success message');
-                    utils.showToast('تم تسجيل الدخول بنجاح! جاري التحويل...', 'success');
-                    
-                    setTimeout(() => {
-                        const user = auth.getUser();
-                        console.log('→ Redirecting user:', user);
-                        if (user && user.userType === 'Admin') {
-                            window.location.replace('/admin/dashboard.html');
-                        } else {
-                            window.location.replace('/client/dashboard.html');
-                        }
-                    }, 800);
-                } else {
-                    console.error('❌ Storage verification failed!');
-                    console.error('Token:', !!storedToken, 'User:', !!storedUser);
-                    utils.showToast('خطأ في حفظ بيانات الجلسة', 'error');
+            if (result && result.success) {
+                // Verify storage before redirect
+                if (!auth.isAuthenticated()) {
+                    throw new Error('خطأ في حفظ بيانات الجلسة');
                 }
+                
+                utils.showToast('تم تسجيل الدخول بنجاح!', 'success');
+                
+                // Small delay to show success message, then redirect
+                const targetUrl = (result.userType === 'Admin') 
+                    ? '/admin/dashboard.html' 
+                    : '/client/dashboard.html';
+                
+                setTimeout(() => {
+                    window.location.replace(targetUrl);
+                }, 500);
             }
         } catch (error) {
-            utils.showToast(error.message || 'فشل تسجيل الدخول. الرجاء التحقق من بيانات الاعتماد.', 'error');
+            isSubmitting = false;
+            const message = error.message || 'فشل تسجيل الدخول. الرجاء التحقق من بيانات الاعتماد.';
+            utils.showToast(message, 'error');
         } finally {
             utils.hideLoading();
         }
-    });
+    }
 
-    document.getElementById('password').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            document.getElementById('login-form').dispatchEvent(new Event('submit'));
-        }
-    });
+    // Attach form submit handler
+    if (loginForm) {
+        loginForm.addEventListener('submit', handleLogin);
+    }
 })();

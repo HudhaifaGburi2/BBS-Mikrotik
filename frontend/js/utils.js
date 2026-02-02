@@ -202,5 +202,28 @@ const utils = {
             isValid: errors.length === 0,
             errors: errors
         };
+    },
+
+    // Convert inline onclick handlers to event listeners for CSP compliance
+    bindInlineHandlers() {
+        // Handle logout buttons
+        document.querySelectorAll('[onclick*="auth.logout"]').forEach(el => {
+            el.removeAttribute('onclick');
+            el.addEventListener('click', () => auth.logout());
+        });
+
+        // Handle other common inline handlers by data attributes
+        document.querySelectorAll('[data-action]').forEach(el => {
+            const action = el.dataset.action;
+            const handler = el.dataset.handler;
+            if (action && window[action]) {
+                el.addEventListener('click', () => window[action](handler));
+            }
+        });
     }
 };
+
+// Auto-bind inline handlers when DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+    utils.bindInlineHandlers();
+});

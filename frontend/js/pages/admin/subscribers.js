@@ -65,11 +65,19 @@
                     { 
                         label: 'Actions', 
                         field: 'id',
-                        render: (row) => '<div class="flex space-x-2"><a href="subscriber-form.html?mode=edit&id=' + row.id + '" class="text-blue-600 hover:text-blue-800"><svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg></a><button onclick="suspendSubscriber(\'' + row.id + '\')" class="text-yellow-600 hover:text-yellow-800"><svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path></svg></button></div>'
+                        render: (row) => '<div class="flex space-x-2"><a href="subscriber-form.html?mode=edit&id=' + row.id + '" class="text-blue-600 hover:text-blue-800"><svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg></a><button data-action="suspend" data-id="' + row.id + '" class="suspend-btn text-yellow-600 hover:text-yellow-800"><svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path></svg></button></div>'
                     }
                 ];
                 
                 components.renderTable(subscribers, columns, 'subscribers-table');
+                
+                // Attach event listeners for suspend buttons
+                document.querySelectorAll('.suspend-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const id = btn.dataset.id;
+                        if (id) suspendSubscriber(id);
+                    });
+                });
                 components.renderPagination(currentPage, totalPages, 'goToPage');
             }
         } catch (error) {

@@ -29,6 +29,23 @@ const apiCache = {
 };
 
 const api = {
+    // Check if we're on the login page to prevent redirect loops
+    _isLoginPage() {
+        const path = window.location.pathname;
+        return path === '/' || path === '/index.html' || path.endsWith('/index.html');
+    },
+
+    // Handle 401 unauthorized - redirect to login if not already there
+    _handleUnauthorized() {
+        if (!this._isLoginPage()) {
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('refreshToken');
+            localStorage.removeItem('userData');
+            localStorage.removeItem('authTimestamp');
+            window.location.replace('/index.html');
+        }
+    },
+
     async get(endpoint) {
         const cacheKey = `GET:${endpoint}`;
         const cached = apiCache.get(cacheKey);
@@ -36,7 +53,6 @@ const api = {
         if (cached) {
             return cached;
         }
-
 
         const token = localStorage.getItem('authToken');
         const headers = {
@@ -54,10 +70,8 @@ const api = {
             });
 
             if (response.status === 401) {
-                localStorage.removeItem('authToken');
-                localStorage.removeItem('userData');
-                window.location.href = '/index.html';
-                return;
+                this._handleUnauthorized();
+                throw new Error('Unauthorized');
             }
 
             if (!response.ok) {
@@ -110,10 +124,8 @@ const api = {
             });
 
             if (response.status === 401) {
-                localStorage.removeItem('authToken');
-                localStorage.removeItem('userData');
-                window.location.href = '/index.html';
-                return;
+                this._handleUnauthorized();
+                throw new Error('Unauthorized');
             }
 
             if (!response.ok) {
@@ -136,7 +148,6 @@ const api = {
             return await response.json();
         } catch (error) {
             console.error('خطأ في API POST:', error);
-            // Network error or CORS issue
             if (error.name === 'TypeError' && error.message.includes('fetch')) {
                 throw new Error('فشل الاتصال بالخادم. تأكد من تشغيل الخادم على http://localhost:5286');
             }
@@ -164,10 +175,8 @@ const api = {
             });
 
             if (response.status === 401) {
-                localStorage.removeItem('authToken');
-                localStorage.removeItem('userData');
-                window.location.href = '/index.html';
-                return;
+                this._handleUnauthorized();
+                throw new Error('Unauthorized');
             }
 
             if (!response.ok) {
@@ -217,10 +226,8 @@ const api = {
             });
 
             if (response.status === 401) {
-                localStorage.removeItem('authToken');
-                localStorage.removeItem('userData');
-                window.location.href = '/index.html';
-                return;
+                this._handleUnauthorized();
+                throw new Error('Unauthorized');
             }
 
             if (!response.ok) {
@@ -240,7 +247,11 @@ const api = {
                 throw new Error(errorMessage);
             }
 
-            return await response.json();
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+                return await response.json();
+            }
+            return { success: true };
         } catch (error) {
             console.error('خطأ في API DELETE:', error);
             throw error;
