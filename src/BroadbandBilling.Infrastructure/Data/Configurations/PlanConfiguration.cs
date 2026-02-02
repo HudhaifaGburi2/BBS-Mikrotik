@@ -14,10 +14,10 @@ public class PlanConfiguration : IEntityTypeConfiguration<Plan>
 
         builder.Property(p => p.Name)
             .IsRequired()
-            .HasMaxLength(100);
+            .HasColumnType("NVARCHAR(100)");
 
         builder.Property(p => p.Description)
-            .HasMaxLength(500);
+            .HasColumnType("NVARCHAR(500)");
 
         builder.OwnsOne(p => p.Price, price =>
         {
