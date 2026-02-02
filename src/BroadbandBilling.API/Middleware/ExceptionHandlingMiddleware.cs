@@ -1,4 +1,5 @@
 using BroadbandBilling.Application.Common.DTOs;
+using BroadbandBilling.Application.Common.Exceptions;
 using BroadbandBilling.Domain.Exceptions;
 using System.Net;
 using System.Text.Json;
@@ -35,6 +36,13 @@ public class ExceptionHandlingMiddleware
 
         var errorResponse = exception switch
         {
+            UnauthorizedException unauthorizedEx => new ErrorResponse
+            {
+                StatusCode = (int)HttpStatusCode.Unauthorized,
+                Message = unauthorizedEx.Message,
+                Errors = new List<string> { unauthorizedEx.Message },
+                Timestamp = DateTime.UtcNow
+            },
             SubscriberNotFoundException notFoundEx => new ErrorResponse
             {
                 StatusCode = (int)HttpStatusCode.NotFound,
