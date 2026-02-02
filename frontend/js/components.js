@@ -2,7 +2,7 @@ const components = {
     renderTable(data, columns, containerId) {
         const container = document.getElementById(containerId);
         if (!container) {
-            console.error(`Container with id '${containerId}' not found`);
+            console.error(`لم يتم العثور على العنصر بالمعرف '${containerId}'`);
             return;
         }
 
@@ -12,7 +12,7 @@ const components = {
                     <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
                     </svg>
-                    <p class="mt-2">No data available</p>
+                    <p class="mt-2">لا توجد بيانات متاحة</p>
                 </div>
             `;
             return;
@@ -125,18 +125,18 @@ const components = {
                     <button onclick="${onPageChange}(${currentPage - 1})" 
                             ${currentPage === 1 ? 'disabled' : ''}
                             class="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
-                        Previous
+                        السابق
                     </button>
                     <button onclick="${onPageChange}(${currentPage + 1})" 
                             ${currentPage === totalPages ? 'disabled' : ''}
                             class="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
-                        Next
+                        التالي
                     </button>
                 </div>
                 <div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
                     <div>
                         <p class="text-sm text-gray-700">
-                            Page <span class="font-medium">${currentPage}</span> of <span class="font-medium">${totalPages}</span>
+                            صفحة <span class="font-medium">${currentPage}</span> من <span class="font-medium">${totalPages}</span>
                         </p>
                     </div>
                     <div>
@@ -144,7 +144,7 @@ const components = {
                             <button onclick="${onPageChange}(${currentPage - 1})" 
                                     ${currentPage === 1 ? 'disabled' : ''}
                                     class="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
-                                <span class="sr-only">Previous</span>
+                                <span class="sr-only">السابق</span>
                                 <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                                     <path fill-rule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clip-rule="evenodd" />
                                 </svg>
@@ -177,7 +177,7 @@ const components = {
                             <button onclick="${onPageChange}(${currentPage + 1})" 
                                     ${currentPage === totalPages ? 'disabled' : ''}
                                     class="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
-                                <span class="sr-only">Next</span>
+                                <span class="sr-only">التالي</span>
                                 <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                                     <path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" />
                                 </svg>
@@ -198,11 +198,11 @@ const components = {
                 <div class="flex justify-center space-x-4">
                     <button onclick="components.hideModal()" 
                             class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300">
-                        Cancel
+                        إلغاء
                     </button>
                     <button onclick="${onConfirm}; components.hideModal()" 
                             class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
-                        Confirm
+                        تأكيد
                     </button>
                 </div>
             </div>
