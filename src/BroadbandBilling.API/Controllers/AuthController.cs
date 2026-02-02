@@ -59,16 +59,37 @@ public class AuthController : ControllerBase
     [Authorize]
     public async Task<IActionResult> Logout()
     {
-        // Implement logout logic (clear refresh token)
+        // Extract user ID from JWT claims
+        var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        
+        if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
+        {
+            return Unauthorized(new { message = "معرف المستخدم غير صالح" });
+        }
+
+        var command = new LogoutCommand { UserId = userId };
+        var success = await _mediator.Send(command);
+
+        if (!success)
+        {
+            return BadRequest(new { message = "فشل تسجيل الخروج" });
+        }
+
         return Ok(new { message = "تم تسجيل الخروج بنجاح" });
     }
 
     [HttpPost("refresh-token")]
     [AllowAnonymous]
-    public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest request)
+    public async Task<ActionResult<LoginResponse>> RefreshToken([FromBody] RefreshTokenRequest request)
     {
-        // Implement refresh token logic
-        return Ok();
+        var command = new RefreshTokenCommand
+        {
+            RefreshToken = request.RefreshToken,
+            IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString()
+        };
+
+        var response = await _mediator.Send(command);
+        return Ok(response);
     }
 }
 
