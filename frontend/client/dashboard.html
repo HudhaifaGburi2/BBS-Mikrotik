@@ -11,12 +11,12 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16">
                 <div class="flex items-center">
-                    <h1 class="text-xl font-bold text-blue-600">Broadband Portal</h1>
+                    <h1 class="text-xl font-bold text-blue-600">بوابة الإنترنت</h1>
                 </div>
                 <div class="flex items-center space-x-4">
-                    <span id="user-name" class="text-sm text-gray-700 hidden md:block">Welcome</span>
+                    <span id="user-name" class="text-sm text-gray-700 hidden md:block">مرحباً</span>
                     <button onclick="auth.logout()" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm">
-                        Logout
+                        تسجيل الخروج
                     </button>
                 </div>
             </div>
@@ -26,14 +26,14 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div class="mb-8">
             <h2 class="text-3xl font-bold text-gray-900">لوحة التحكم</h2>
-            <p class="text-gray-600 mt-2">Welcome to your broadband account portal</p>
+            <p class="text-gray-600 mt-2">مرحباً بك في بوابة حسابك</p>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <div class="bg-white rounded-lg shadow-md p-6">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-gray-500 text-sm font-medium uppercase">Current Balance</p>
+                        <p class="text-gray-500 text-sm font-medium uppercase">الرصيد الحالي</p>
                         <p id="balance" class="text-2xl font-bold text-gray-900 mt-2">-</p>
                     </div>
                     <div class="bg-blue-100 rounded-full p-3">
@@ -75,7 +75,7 @@
             <div class="bg-white rounded-lg shadow-md p-6">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-gray-500 text-sm font-medium uppercase">Data Used</p>
+                        <p class="text-gray-500 text-sm font-medium uppercase">البيانات المستخدمة</p>
                         <p id="data-used" class="text-2xl font-bold text-gray-900 mt-2">-</p>
                     </div>
                     <div class="bg-purple-100 rounded-full p-3">
@@ -89,11 +89,11 @@
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
             <div class="lg:col-span-2 bg-white rounded-lg shadow-md p-6">
-                <h3 class="text-lg font-semibold text-gray-900 mb-4">Usage This Month</h3>
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">الاستخدام هذا الشهر</h3>
                 <div class="space-y-4">
                     <div>
                         <div class="flex justify-between text-sm mb-2">
-                            <span class="text-gray-600">Data Usage</span>
+                            <span class="text-gray-600">استخدام البيانات</span>
                             <span id="usage-percentage" class="font-medium text-gray-900">0%</span>
                         </div>
                         <div class="w-full bg-gray-200 rounded-full h-3">
@@ -107,23 +107,23 @@
                 <h3 class="text-lg font-semibold text-gray-900 mb-4">الإجراءات السريعة</h3>
                 <div class="space-y-3">
                     <a href="subscription.html" class="block w-full px-4 py-3 bg-blue-600 text-white text-center rounded-lg hover:bg-blue-700 transition-colors">
-                        View Subscription
+                        عرض الاشتراك
                     </a>
                     <a href="payment.html" class="block w-full px-4 py-3 bg-green-600 text-white text-center rounded-lg hover:bg-green-700 transition-colors">
-                        Make Payment
+                        إجراء دفعة
                     </a>
                     <a href="invoices.html" class="block w-full px-4 py-3 bg-gray-600 text-white text-center rounded-lg hover:bg-gray-700 transition-colors">
-                        View Invoices
+                        عرض الفواتير
                     </a>
                     <a href="usage.html" class="block w-full px-4 py-3 bg-purple-600 text-white text-center rounded-lg hover:bg-purple-700 transition-colors">
-                        Usage Statistics
+                        إحصائيات الاستخدام
                     </a>
                 </div>
             </div>
         </div>
 
         <div class="bg-white rounded-lg shadow-md p-6">
-            <h3 class="text-lg font-semibold text-gray-900 mb-4">Recent Transactions</h3>
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">المعاملات الأخيرة</h3>
             <div id="transactions-table"></div>
         </div>
     </div>

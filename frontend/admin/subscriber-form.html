@@ -11,7 +11,7 @@
         <div class="max-w-3xl mx-auto">
             <div class="bg-white rounded-lg shadow-md p-8">
                 <div class="flex items-center justify-between mb-6">
-                    <h2 id="form-title" class="text-2xl font-bold text-gray-900">Add Subscriber</h2>
+                    <h2 id="form-title" class="text-2xl font-bold text-gray-900">إضافة مشترك</h2>
                     <a href="subscribers.html" class="text-gray-600 hover:text-gray-900">
                         <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -23,7 +23,7 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <label for="fullName" class="block text-sm font-medium text-gray-700 mb-2">
-                                Full Name <span class="text-red-500">*</span>
+                                الاسم الكامل <span class="text-red-500">*</span>
                             </label>
                             <input 
                                 type="text" 
@@ -36,7 +36,7 @@
 
                         <div>
                             <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
-                                Email <span class="text-red-500">*</span>
+                                البريد الإلكتروني <span class="text-red-500">*</span>
                             </label>
                             <input 
                                 type="email" 
@@ -49,7 +49,7 @@
 
                         <div>
                             <label for="phoneNumber" class="block text-sm font-medium text-gray-700 mb-2">
-                                Phone Number <span class="text-red-500">*</span>
+                                رقم الهاتف <span class="text-red-500">*</span>
                             </label>
                             <input 
                                 type="tel" 
@@ -63,7 +63,7 @@
 
                         <div>
                             <label for="nationalId" class="block text-sm font-medium text-gray-700 mb-2">
-                                National ID
+                                رقم الهوية
                             </label>
                             <input 
                                 type="text" 
@@ -75,7 +75,7 @@
 
                     <div>
                         <label for="address" class="block text-sm font-medium text-gray-700 mb-2">
-                            Address <span class="text-red-500">*</span>
+                            العنوان <span class="text-red-500">*</span>
                         </label>
                         <textarea 
                             id="address" 
@@ -87,26 +87,26 @@
                     </div>
 
                     <div class="pt-6 border-t border-gray-200">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Subscription Details</h3>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">تفاصيل الاشتراك</h3>
                         
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
                                 <label for="planId" class="block text-sm font-medium text-gray-700 mb-2">
-                                    Plan <span class="text-red-500">*</span>
+                                    الباقة <span class="text-red-500">*</span>
                                 </label>
                                 <select 
                                     id="planId" 
                                     name="planId" 
                                     required
                                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                    <option value="">Select a plan...</option>
+                                    <option value="">اختر باقة...</option>
                                 </select>
                                 <p class="error-message text-red-500 text-sm mt-1 hidden"></p>
                             </div>
 
                             <div>
                                 <label for="startDate" class="block text-sm font-medium text-gray-700 mb-2">
-                                    Start Date <span class="text-red-500">*</span>
+                                    تاريخ البداية <span class="text-red-500">*</span>
                                 </label>
                                 <input 
                                     type="date" 
@@ -124,19 +124,19 @@
                                     id="autoRenew" 
                                     name="autoRenew"
                                     class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
-                                <span class="ml-2 text-sm text-gray-700">Enable auto-renew</span>
+                                <span class="ml-2 text-sm text-gray-700">تفعيل التجديد التلقائي</span>
                             </label>
                         </div>
                     </div>
 
                     <div class="flex items-center justify-end space-x-4 pt-6 border-t border-gray-200">
                         <a href="subscribers.html" class="px-6 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors">
-                            Cancel
+                            إلغاء
                         </a>
                         <button 
                             type="submit" 
                             class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                            Save Subscriber
+                            حفظ المشترك
                         </button>
                     </div>
                 </form>
