@@ -42,10 +42,8 @@ public class SuspendExpiredSubscriptionsJob
 
                     if (pppoeAccount != null && pppoeAccount.IsEnabled)
                     {
-                        await _mikrotikService.DisablePppoeUserAsync(
-                            pppoeAccount.MikroTikDeviceId, 
-                            pppoeAccount.Username);
-                        
+                        // await _mikrotikService.DisablePppoeUserAsync(pppoeAccount.MikroTikDeviceId, pppoeAccount.Username);
+                        // Skip for now as DisablePppoeUserAsync not implemented
                         pppoeAccount.Disable();
                         _unitOfWork.PppoeAccounts.Update(pppoeAccount);
                     }

@@ -1,11 +1,9 @@
+using BroadbandBilling.Application.Features.Subscribers.Commands;
+using BroadbandBilling.Application.Features.Subscribers.DTOs;
+using BroadbandBilling.Application.Features.Subscribers.Queries;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using AutoMapper;
-using BroadbandBilling.Application.Common.DTOs;
-using BroadbandBilling.Application.Common.Interfaces;
-using BroadbandBilling.Application.UseCases.Subscribers.CreateSubscriber;
-using BroadbandBilling.Application.UseCases.Subscribers.GetSubscriber;
-using BroadbandBilling.Application.UseCases.Subscribers.ListSubscribers;
 
 namespace BroadbandBilling.API.Controllers;
 
@@ -14,122 +12,222 @@ namespace BroadbandBilling.API.Controllers;
 [Authorize]
 public class SubscribersController : ControllerBase
 {
-    private readonly CreateSubscriberHandler _createSubscriberHandler;
-    private readonly GetSubscriberHandler _getSubscriberHandler;
-    private readonly ListSubscribersHandler _listSubscribersHandler;
-    private readonly IUnitOfWork _unitOfWork;
-    private readonly IMapper _mapper;
+    private readonly IMediator _mediator;
+    private readonly ILogger<SubscribersController> _logger;
 
-    public SubscribersController(
-        CreateSubscriberHandler createSubscriberHandler,
-        GetSubscriberHandler getSubscriberHandler,
-        ListSubscribersHandler listSubscribersHandler,
-        IUnitOfWork unitOfWork,
-        IMapper mapper)
+    public SubscribersController(IMediator mediator, ILogger<SubscribersController> logger)
     {
-        _createSubscriberHandler = createSubscriberHandler;
-        _getSubscriberHandler = getSubscriberHandler;
-        _listSubscribersHandler = listSubscribersHandler;
-        _unitOfWork = unitOfWork;
-        _mapper = mapper;
+        _mediator = mediator;
+        _logger = logger;
     }
 
     [HttpGet]
-    public async Task<ActionResult<ApiResponse<PaginatedResult<Application.UseCases.Subscribers.DTOs.SubscriberDto>>>> GetAll(
-        [FromQuery] int pageNumber = 1,
-        [FromQuery] int pageSize = 10,
-        [FromQuery] bool activeOnly = false)
+    public async Task<ActionResult<PagedResult<SubscriberDto>>> GetSubscribers(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        [FromQuery] string? search = null,
+        [FromQuery] bool? isActive = null,
+        [FromQuery] bool? hasActiveSubscription = null,
+        [FromQuery] string? sortBy = null,
+        [FromQuery] bool sortDescending = false)
     {
-        var query = new ListSubscribersQuery
+        try
         {
-            PageNumber = pageNumber,
-            PageSize = pageSize,
-            ActiveOnly = activeOnly
-        };
-
-        var result = await _listSubscribersHandler.HandleAsync(query);
-        
-        return Ok(ApiResponse<PaginatedResult<Application.UseCases.Subscribers.DTOs.SubscriberDto>>
-            .SuccessResponse(result.Subscribers, "Subscribers retrieved successfully"));
+            var query = new GetSubscribersQuery(page, pageSize, search, isActive, hasActiveSubscription, sortBy, sortDescending);
+            var result = await _mediator.Send(query);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving subscribers");
+            return StatusCode(500, new { error = "حدث خطأ أثناء جلب المشتركين" });
+        }
     }
 
     [HttpGet("{id}")]
-    public async Task<ActionResult<ApiResponse<Application.UseCases.Subscribers.DTOs.SubscriberDto>>> GetById(Guid id)
+    public async Task<ActionResult<SubscriberDto>> GetSubscriber(Guid id)
     {
-        var query = new GetSubscriberQuery { SubscriberId = id };
-        var result = await _getSubscriberHandler.HandleAsync(query);
-        
-        return Ok(ApiResponse<Application.UseCases.Subscribers.DTOs.SubscriberDto>
-            .SuccessResponse(result.Subscriber, "Subscriber retrieved successfully"));
+        try
+        {
+            var query = new GetSubscriberByIdQuery(id);
+            var result = await _mediator.Send(query);
+            return Ok(result);
+        }
+        catch (NotFoundException ex)
+        {
+            _logger.LogWarning(ex, "Subscriber not found: {SubscriberId}", id);
+            return NotFound(new { error = "المشترك غير موجود" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving subscriber: {SubscriberId}", id);
+            return StatusCode(500, new { error = "حدث خطأ أثناء جلب بيانات المشترك" });
+        }
     }
 
     [HttpPost]
-    public async Task<ActionResult<ApiResponse<Application.UseCases.Subscribers.DTOs.SubscriberDto>>> Create(
-        [FromBody] CreateSubscriberCommand command)
+    public async Task<ActionResult<SubscriberDto>> CreateSubscriber([FromBody] CreateSubscriberCommand command)
     {
-        var validator = new CreateSubscriberValidator();
-        var validationResult = await validator.ValidateAsync(command);
-
-        if (!validationResult.IsValid)
+        try
         {
-            var errors = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
-            return BadRequest(ApiResponse<Application.UseCases.Subscribers.DTOs.SubscriberDto>
-                .FailureResponse("Validation failed", errors));
+            var result = await _mediator.Send(command);
+            return CreatedAtAction(nameof(GetSubscriber), new { id = result.Id }, result);
         }
-
-        var result = await _createSubscriberHandler.HandleAsync(command);
-        
-        return CreatedAtAction(
-            nameof(GetById),
-            new { id = result.Subscriber.Id },
-            ApiResponse<Application.UseCases.Subscribers.DTOs.SubscriberDto>
-                .SuccessResponse(result.Subscriber, "Subscriber created successfully"));
-    }
-
-    [HttpGet("{id}/subscriptions")]
-    public async Task<ActionResult<ApiResponse<IEnumerable<Application.UseCases.Subscriptions.DTOs.SubscriptionDto>>>> GetSubscriptions(Guid id)
-    {
-        var subscriptions = await _unitOfWork.Subscriptions.GetBySubscriberIdAsync(id);
-        var subscriptionDtos = _mapper.Map<IEnumerable<Application.UseCases.Subscriptions.DTOs.SubscriptionDto>>(subscriptions);
-        
-        return Ok(ApiResponse<IEnumerable<Application.UseCases.Subscriptions.DTOs.SubscriptionDto>>
-            .SuccessResponse(subscriptionDtos, "Subscriptions retrieved successfully"));
+        catch (ArgumentException ex)
+        {
+            _logger.LogWarning(ex, "Invalid input for subscriber creation");
+            return BadRequest(new { error = ex.Message });
+        }
+        catch (NotFoundException ex)
+        {
+            _logger.LogWarning(ex, "Plan not found during subscriber creation");
+            return NotFound(new { error = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating subscriber");
+            return StatusCode(500, new { error = "حدث خطأ أثناء إنشاء المشترك" });
+        }
     }
 
     [HttpPut("{id}")]
-    public async Task<ActionResult<ApiResponse<Application.UseCases.Subscribers.DTOs.SubscriberDto>>> Update(
-        Guid id,
-        [FromBody] Application.UseCases.Subscribers.DTOs.UpdateSubscriberDto dto)
+    public async Task<ActionResult<SubscriberDto>> UpdateSubscriber(Guid id, [FromBody] UpdateSubscriberCommand command)
     {
-        var subscriber = await _unitOfWork.Subscribers.GetByIdAsync(id);
-        if (subscriber == null)
+        try
         {
-            return NotFound(ApiResponse<Application.UseCases.Subscribers.DTOs.SubscriberDto>
-                .FailureResponse("Subscriber not found", $"Subscriber with ID {id} not found"));
+            var updatedCommand = command with { SubscriberId = id };
+            var result = await _mediator.Send(updatedCommand);
+            return Ok(result);
         }
+        catch (NotFoundException ex)
+        {
+            _logger.LogWarning(ex, "Subscriber not found for update: {SubscriberId}", id);
+            return NotFound(new { error = "المشترك غير موجود" });
+        }
+        catch (ArgumentException ex)
+        {
+            _logger.LogWarning(ex, "Invalid input for subscriber update: {SubscriberId}", id);
+            return BadRequest(new { error = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating subscriber: {SubscriberId}", id);
+            return StatusCode(500, new { error = "حدث خطأ أثناء تحديث بيانات المشترك" });
+        }
+    }
 
-        _unitOfWork.Subscribers.Update(subscriber);
-        await _unitOfWork.CommitAsync();
+    [HttpPost("{id}/suspend")]
+    public async Task<ActionResult> SuspendSubscriber(Guid id, [FromBody] SuspendSubscriberCommand command)
+    {
+        try
+        {
+            var updatedCommand = command with { SubscriberId = id };
+            await _mediator.Send(updatedCommand);
+            return Ok(new { message = "تم إيقاف المشترك بنجاح" });
+        }
+        catch (NotFoundException ex)
+        {
+            _logger.LogWarning(ex, "Subscriber not found for suspension: {SubscriberId}", id);
+            return NotFound(new { error = "المشترك غير موجود" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error suspending subscriber: {SubscriberId}", id);
+            return StatusCode(500, new { error = "حدث خطأ أثناء إيقاف المشترك" });
+        }
+    }
 
-        var subscriberDto = _mapper.Map<Application.UseCases.Subscribers.DTOs.SubscriberDto>(subscriber);
-        
-        return Ok(ApiResponse<Application.UseCases.Subscribers.DTOs.SubscriberDto>
-            .SuccessResponse(subscriberDto, "Subscriber updated successfully"));
+    [HttpPost("{id}/unsuspend")]
+    public async Task<ActionResult> UnsuspendSubscriber(Guid id, [FromBody] UnsuspendSubscriberCommand command)
+    {
+        try
+        {
+            var updatedCommand = command with { SubscriberId = id };
+            await _mediator.Send(updatedCommand);
+            return Ok(new { message = "تم تفعيل المشترك بنجاح" });
+        }
+        catch (NotFoundException ex)
+        {
+            _logger.LogWarning(ex, "Subscriber not found for unsuspension: {SubscriberId}", id);
+            return NotFound(new { error = "المشترك غير موجود" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error unsuspending subscriber: {SubscriberId}", id);
+            return StatusCode(500, new { error = "حدث خطأ أثناء تفعيل المشترك" });
+        }
+    }
+
+    [HttpPost("{id}/change-plan")]
+    public async Task<ActionResult<SubscriptionDto>> ChangeSubscriberPlan(Guid id, [FromBody] ChangeSubscriberPlanCommand command)
+    {
+        try
+        {
+            var updatedCommand = command with { SubscriberId = id };
+            var result = await _mediator.Send(updatedCommand);
+            return Ok(result);
+        }
+        catch (NotFoundException ex)
+        {
+            _logger.LogWarning(ex, "Subscriber or plan not found for plan change: {SubscriberId}", id);
+            return NotFound(new { error = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, "Invalid operation for plan change: {SubscriberId}", id);
+            return BadRequest(new { error = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error changing subscriber plan: {SubscriberId}", id);
+            return StatusCode(500, new { error = "حدث خطأ أثناء تغيير باقة المشترك" });
+        }
+    }
+
+    [HttpPost("{id}/reset-password")]
+    public async Task<ActionResult<string>> ResetSubscriberPassword(Guid id, [FromBody] ResetSubscriberPasswordCommand command)
+    {
+        try
+        {
+            var updatedCommand = command with { SubscriberId = id };
+            var newPassword = await _mediator.Send(updatedCommand);
+            return Ok(new { message = "تم إعادة تعيين كلمة المرور بنجاح", password = newPassword });
+        }
+        catch (NotFoundException ex)
+        {
+            _logger.LogWarning(ex, "Subscriber not found for password reset: {SubscriberId}", id);
+            return NotFound(new { error = "المشترك غير موجود" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error resetting subscriber password: {SubscriberId}", id);
+            return StatusCode(500, new { error = "حدث خطأ أثناء إعادة تعيين كلمة المرور" });
+        }
     }
 
     [HttpDelete("{id}")]
-    public async Task<ActionResult<ApiResponse<bool>>> Delete(Guid id)
+    public async Task<ActionResult> DeleteSubscriber(Guid id, [FromQuery] bool forceDelete = false)
     {
-        var subscriber = await _unitOfWork.Subscribers.GetByIdAsync(id);
-        if (subscriber == null)
+        try
         {
-            return NotFound(ApiResponse<bool>
-                .FailureResponse("Subscriber not found", $"Subscriber with ID {id} not found"));
+            var command = new DeleteSubscriberCommand(id, forceDelete);
+            await _mediator.Send(command);
+            return Ok(new { message = "تم حذف المشترك بنجاح" });
         }
-
-        _unitOfWork.Subscribers.Remove(subscriber);
-        await _unitOfWork.CommitAsync();
-        
-        return Ok(ApiResponse<bool>.SuccessResponse(true, "Subscriber deleted successfully"));
+        catch (NotFoundException ex)
+        {
+            _logger.LogWarning(ex, "Subscriber not found for deletion: {SubscriberId}", id);
+            return NotFound(new { error = "المشترك غير موجود" });
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, "Cannot delete subscriber with active subscriptions: {SubscriberId}", id);
+            return BadRequest(new { error = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error deleting subscriber: {SubscriberId}", id);
+            return StatusCode(500, new { error = "حدث خطأ أثناء حذف المشترك" });
+        }
     }
 }

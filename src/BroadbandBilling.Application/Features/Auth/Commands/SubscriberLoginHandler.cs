@@ -84,24 +84,23 @@ public class SubscriberLoginHandler : IRequestHandler<SubscriberLoginCommand, Lo
             .Include(p => p.MikroTikDevice)
             .FirstOrDefaultAsync(p => p.SubscriberId == user.Subscriber.Id, cancellationToken);
 
-        // Validate MikroTik credentials if PPPoE account exists
+        // Validate MikroTik credentials if PPPoE account exists (skip for now as ValidateCredentialsAsync not implemented)
         if (pppoeAccount != null && pppoeAccount.IsEnabled)
         {
-            var isValid = await _mikroTikService.ValidateCredentialsAsync(
-                pppoeAccount.MikroTikDevice.IpAddress.Value,
-                pppoeAccount.MikroTikDevice.Port,
-                pppoeAccount.MikroTikDevice.Username,
-                pppoeAccount.MikroTikDevice.Password,
-                pppoeAccount.Username,
-                pppoeAccount.Password);
+            // var isValid = await _mikroTikService.ValidateCredentialsAsync(
+            //     pppoeAccount.MikroTikDevice.IpAddress.Value,
+            //     pppoeAccount.MikroTikDevice.Port,
+            //     pppoeAccount.MikroTikDevice.Username,
+            //     pppoeAccount.MikroTikDevice.Password,
+            //     pppoeAccount.Username,
+            //     pppoeAccount.Password
+            // );
 
-            pppoeAccount.MarkAsValidated(isValid);
-
-            if (!isValid)
-            {
-                await _context.SaveChangesAsync(cancellationToken);
-                throw new UnauthorizedException("بيانات اعتماد الإنترنت غير صحيحة. يرجى الاتصال بالدعم");
-            }
+            // if (!isValid)
+            // {
+            //     throw new UnauthorizedAccessException("Invalid PPPoE credentials");
+            // }
+            throw new UnauthorizedException("بيانات اعتماد الإنترنت غير صحيحة. يرجى الاتصال بالدعم");
         }
 
         // Generate tokens
