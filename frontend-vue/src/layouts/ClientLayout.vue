@@ -8,6 +8,7 @@ const router = useRouter()
 const navItems = [
   { label: 'لوحة التحكم', to: '/client/dashboard' },
   { label: 'اشتراكي', to: '/client/subscription' },
+  { label: 'الباقات', to: '/client/plans' },
   { label: 'الفواتير', to: '/client/invoices' },
   { label: 'الدفع', to: '/client/payment' },
   { label: 'الاستهلاك', to: '/client/usage' },
