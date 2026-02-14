@@ -140,8 +140,7 @@ public class AuthController : ControllerBase
 
     private void SetAuthCookies(string accessToken, string refreshToken, int expiresInSeconds, bool rememberMe)
     {
-        var isDev = _configuration.GetValue<bool>("ASPNETCORE_ENVIRONMENT") ||
-                    Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development";
+        var isDev = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development";
 
         var accessCookieOptions = new CookieOptions
         {
