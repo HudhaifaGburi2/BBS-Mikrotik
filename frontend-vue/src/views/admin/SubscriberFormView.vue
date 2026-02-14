@@ -51,15 +51,15 @@ function validate(): boolean {
   if (form.value.ipAddress && !ipRegex.test(form.value.ipAddress)) errors.value.ipAddress = 'صيغة IP غير صحيحة (مثال: 192.168.1.100)'
 
   if (!isEdit.value) {
-    if (!form.value.planId) errors.value.planId = 'الرجاء اختيار باقة'
-    if (!form.value.mikroTikUsername.trim()) errors.value.mikroTikUsername = 'اسم مستخدم MikroTik مطلوب'
-    if (!form.value.mikroTikPassword) errors.value.mikroTikPassword = 'كلمة مرور MikroTik مطلوبة'
+    if (form.value.mikroTikUsername.trim() && !form.value.mikroTikPassword) {
+      errors.value.mikroTikPassword = 'كلمة مرور MikroTik مطلوبة عند تحديد اسم المستخدم'
+    }
 
     if (form.value.createSystemAccount) {
       if (!form.value.systemUsername.trim()) errors.value.systemUsername = 'اسم مستخدم النظام مطلوب'
       if (!form.value.systemPassword) errors.value.systemPassword = 'كلمة مرور النظام مطلوبة'
       else if (form.value.systemPassword.length < 8) errors.value.systemPassword = 'كلمة المرور يجب أن تكون 8 أحرف على الأقل'
-      if (form.value.systemPassword === form.value.mikroTikPassword) errors.value.systemPassword = 'كلمة مرور النظام يجب أن تختلف عن كلمة مرور MikroTik'
+      if (form.value.mikroTikPassword && form.value.systemPassword === form.value.mikroTikPassword) errors.value.systemPassword = 'كلمة مرور النظام يجب أن تختلف عن كلمة مرور MikroTik'
     }
   }
   return Object.keys(errors.value).length === 0
@@ -177,13 +177,13 @@ onMounted(async () => {
 
         <!-- MikroTik PPPoE Credentials (new subscriber only) -->
         <div v-if="!isEdit" class="pt-6 border-t border-soft-beige">
-          <h3 class="text-lg font-semibold text-jazan-green mb-2">بيانات MikroTik (PPPoE)</h3>
-          <p class="text-sm text-light-gray mb-4">بيانات الاتصال بالراوتر — مختلفة عن بيانات تسجيل الدخول للنظام</p>
+          <h3 class="text-lg font-semibold text-jazan-green mb-2">بيانات MikroTik (PPPoE) <span class="text-sm font-normal text-light-gray">— اختياري</span></h3>
+          <p class="text-sm text-light-gray mb-4">بيانات الاتصال بالراوتر — يمكن إضافتها لاحقاً</p>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <FormField label="اسم مستخدم MikroTik" :error="errors.mikroTikUsername" required>
+            <FormField label="اسم مستخدم MikroTik" :error="errors.mikroTikUsername">
               <input v-model="form.mikroTikUsername" type="text" class="w-full px-4 py-2 bg-soft-beige-light border border-sandy-brown/30 rounded-lg focus:ring-2 focus:ring-jazan-green focus:border-jazan-green font-mono" placeholder="pppoe_user" />
             </FormField>
-            <FormField label="كلمة مرور MikroTik" :error="errors.mikroTikPassword" required>
+            <FormField label="كلمة مرور MikroTik" :error="errors.mikroTikPassword">
               <input v-model="form.mikroTikPassword" type="password" class="w-full px-4 py-2 bg-soft-beige-light border border-sandy-brown/30 rounded-lg focus:ring-2 focus:ring-jazan-green focus:border-jazan-green" />
             </FormField>
           </div>
@@ -193,7 +193,7 @@ onMounted(async () => {
         <div v-if="!isEdit" class="pt-6 border-t border-soft-beige">
           <h3 class="text-lg font-semibold text-jazan-green mb-4">تفاصيل الاشتراك</h3>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <FormField label="الباقة" :error="errors.planId" required>
+            <FormField label="الباقة" :error="errors.planId">
               <select v-model="form.planId" class="w-full px-4 py-2 bg-soft-beige-light border border-sandy-brown/30 rounded-lg focus:ring-2 focus:ring-jazan-green focus:border-jazan-green">
                 <option value="">اختر باقة...</option>
                 <option v-for="plan in plansStore.plans" :key="plan.id" :value="plan.id">
