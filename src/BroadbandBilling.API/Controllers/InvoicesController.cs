@@ -1,9 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using BroadbandBilling.Application.Common.DTOs;
 using BroadbandBilling.Application.Common.Interfaces;
 using BroadbandBilling.Application.UseCases.Billing.GenerateInvoice;
-using BroadbandBilling.Application.UseCases.Invoices.DTOs;
 
 namespace BroadbandBilling.API.Controllers;
 
@@ -20,45 +18,45 @@ public class InvoicesController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<ApiResponse<IEnumerable<InvoiceDto>>>> GetAll(CancellationToken cancellationToken)
+    public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
     {
         var result = await _invoiceService.GetAllAsync(cancellationToken);
-        return Ok(result);
+        return Ok(result.Data);
     }
 
     [HttpGet("{id}")]
-    public async Task<ActionResult<ApiResponse<InvoiceDto>>> GetById(Guid id, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
     {
         var result = await _invoiceService.GetByIdAsync(id, cancellationToken);
         if (!result.Success)
-            return NotFound(result);
+            return NotFound(new { error = result.Message });
 
-        return Ok(result);
+        return Ok(result.Data);
     }
 
     [HttpGet("subscriber/{subscriberId}")]
-    public async Task<ActionResult<ApiResponse<IEnumerable<InvoiceDto>>>> GetBySubscriber(
+    public async Task<IActionResult> GetBySubscriber(
         Guid subscriberId, CancellationToken cancellationToken)
     {
         var result = await _invoiceService.GetBySubscriberIdAsync(subscriberId, cancellationToken);
-        return Ok(result);
+        return Ok(result.Data);
     }
 
     [HttpGet("overdue")]
-    public async Task<ActionResult<ApiResponse<IEnumerable<InvoiceDto>>>> GetOverdue(CancellationToken cancellationToken)
+    public async Task<IActionResult> GetOverdue(CancellationToken cancellationToken)
     {
         var result = await _invoiceService.GetOverdueAsync(cancellationToken);
-        return Ok(result);
+        return Ok(result.Data);
     }
 
     [HttpPost]
-    public async Task<ActionResult<ApiResponse<InvoiceDto>>> Create(
+    public async Task<IActionResult> Create(
         [FromBody] GenerateInvoiceCommand command, CancellationToken cancellationToken)
     {
         var result = await _invoiceService.GenerateAsync(command, cancellationToken);
         if (!result.Success)
-            return BadRequest(result);
+            return BadRequest(new { error = result.Message, errors = result.Errors });
 
-        return CreatedAtAction(nameof(GetById), new { id = result.Data!.Id }, result);
+        return CreatedAtAction(nameof(GetById), new { id = result.Data!.Id }, result.Data);
     }
 }
