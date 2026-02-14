@@ -72,6 +72,21 @@ export const useSubscribersStore = defineStore('subscribers', () => {
     return res.data
   }
 
+  async function resetSystemPassword(id: string, newPassword: string) {
+    const res = await apiPost<{ message: string; password: string }>(`/subscribers/${id}/reset-system-password`, { newPassword })
+    return res.data
+  }
+
+  async function resetMikroTikPassword(id: string, newPassword: string) {
+    const res = await apiPost<{ message: string; password: string }>(`/subscribers/${id}/reset-mikrotik-password`, { newPassword })
+    return res.data
+  }
+
+  async function changePlan(id: string, planId: string) {
+    const res = await apiPost(`/subscribers/${id}/change-plan`, { planId })
+    return res.data
+  }
+
   return {
     subscribers,
     currentSubscriber,
@@ -87,5 +102,8 @@ export const useSubscribersStore = defineStore('subscribers', () => {
     unsuspendSubscriber,
     deleteSubscriber,
     resetPassword,
+    resetSystemPassword,
+    resetMikroTikPassword,
+    changePlan,
   }
 })
