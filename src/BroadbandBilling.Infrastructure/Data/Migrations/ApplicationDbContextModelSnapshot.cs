@@ -549,7 +549,7 @@ namespace BroadbandBilling.Infrastructure.Data.Migrations
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<Guid>("UserId")
+                    b.Property<Guid?>("UserId")
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
@@ -563,7 +563,8 @@ namespace BroadbandBilling.Infrastructure.Data.Migrations
                     b.HasIndex("PhoneNumber");
 
                     b.HasIndex("UserId")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("[UserId] IS NOT NULL");
 
                     b.ToTable("Subscribers", (string)null);
                 });
