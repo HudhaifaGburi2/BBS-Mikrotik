@@ -91,17 +91,10 @@ async function handleSubmit() {
         phoneNumber: sanitize(form.value.phoneNumber),
         nationalId: form.value.nationalId ? sanitize(form.value.nationalId) : null,
         address: sanitize(form.value.address),
-        macAddress: form.value.macAddress ? sanitize(form.value.macAddress) : null,
-        ipAddress: form.value.ipAddress ? sanitize(form.value.ipAddress) : null,
-        planId: form.value.planId,
-        startDate: form.value.startDate || new Date().toISOString().slice(0, 10),
-        autoRenew: form.value.autoRenew,
-        mikroTikUsername: sanitize(form.value.mikroTikUsername),
-        mikroTikPassword: form.value.mikroTikPassword,
-        createSystemAccount: form.value.createSystemAccount,
-        systemUsername: form.value.createSystemAccount ? sanitize(form.value.systemUsername) : null,
-        systemPassword: form.value.createSystemAccount ? form.value.systemPassword : null,
-      })
+        planId: form.value.planId || null,
+        pppUsername: form.value.mikroTikUsername ? sanitize(form.value.mikroTikUsername) : null,
+        pppPassword: form.value.mikroTikPassword || null,
+      } as any)
       toast.success('تم إنشاء المشترك بنجاح')
     }
     router.push('/admin/subscribers')
