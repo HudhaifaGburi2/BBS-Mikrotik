@@ -45,7 +45,7 @@ public class SubscriberConfiguration : IEntityTypeConfiguration<Subscriber>
 
         builder.Property(s => s.UpdatedAt);
 
-        builder.HasIndex(s => s.UserId).IsUnique();
+        builder.HasIndex(s => s.UserId).IsUnique().HasFilter("[UserId] IS NOT NULL");
         builder.HasIndex(s => s.Email);
         builder.HasIndex(s => s.PhoneNumber);
         builder.HasIndex(s => s.NationalId);
