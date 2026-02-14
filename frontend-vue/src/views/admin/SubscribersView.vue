@@ -115,7 +115,10 @@ onMounted(() => store.fetchSubscribers())
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm">
                 <div class="flex gap-2">
-                  <button class="text-coastal-blue hover:text-coastal-blue-dark font-medium" @click="router.push(`/admin/subscribers/${sub.id}/edit`)">
+                  <button class="text-coastal-blue hover:text-coastal-blue-dark font-medium" @click="router.push(`/admin/subscribers/${sub.id}`)">
+                    عرض
+                  </button>
+                  <button class="text-jazan-green hover:text-jazan-green-dark font-medium" @click="router.push(`/admin/subscribers/${sub.id}/edit`)">
                     تعديل
                   </button>
                   <button v-if="sub.isActive" class="text-golden-sand-dark hover:text-golden-sand font-medium" @click="confirmSuspend(sub.id)">
