@@ -23,7 +23,13 @@ public class Payment : IEntity
     public Invoice Invoice { get; private set; }
     public Subscriber Subscriber { get; private set; }
 
-    private Payment() { }
+    private Payment()
+    {
+        PaymentReference = null!;
+        Amount = null!;
+        Invoice = null!;
+        Subscriber = null!;
+    }
 
     private Payment(Guid invoiceId, Guid subscriberId, string paymentReference,
         Money amount, PaymentMethod method, DateTime paymentDate, 
@@ -32,6 +38,8 @@ public class Payment : IEntity
         Id = Guid.NewGuid();
         InvoiceId = invoiceId;
         SubscriberId = subscriberId;
+        Invoice = null!;
+        Subscriber = null!;
         PaymentReference = paymentReference ?? throw new ArgumentNullException(nameof(paymentReference));
         Amount = amount ?? throw new ArgumentNullException(nameof(amount));
         Method = method;

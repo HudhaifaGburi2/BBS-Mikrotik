@@ -35,7 +35,13 @@ public class Subscriber : IEntity
     private readonly List<PppoeAccount> _pppoeAccounts = new();
     public IReadOnlyCollection<PppoeAccount> PppoeAccounts => _pppoeAccounts.AsReadOnly();
 
-    private Subscriber() { }
+    private Subscriber()
+    {
+        FullName = null!;
+        Email = null!;
+        PhoneNumber = null!;
+        Address = null!;
+    }
 
     private Subscriber(string fullName, string email, string phoneNumber, 
         string address, string? nationalId)

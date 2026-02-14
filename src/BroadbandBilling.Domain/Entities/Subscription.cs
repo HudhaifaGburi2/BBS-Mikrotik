@@ -22,13 +22,20 @@ public class Subscription : IEntity
     public Subscriber Subscriber { get; private set; }
     public Plan Plan { get; private set; }
 
-    private Subscription() { }
+    private Subscription()
+    {
+        BillingPeriod = null!;
+        Subscriber = null!;
+        Plan = null!;
+    }
 
     private Subscription(Guid subscriberId, Guid planId, DateTime startDate, int billingCycleDays)
     {
         Id = Guid.NewGuid();
         SubscriberId = subscriberId;
         PlanId = planId;
+        Subscriber = null!;
+        Plan = null!;
         BillingPeriod = DateRange.Create(startDate, startDate.AddDays(billingCycleDays - 1));
         Status = SubscriptionStatus.PendingActivation;
         CreatedAt = DateTime.UtcNow;

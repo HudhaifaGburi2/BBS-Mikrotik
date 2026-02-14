@@ -204,6 +204,14 @@ public class UsersController : ControllerBase
         if (user == null)
             return NotFound(new { error = "المستخدم غير موجود" });
 
+        if (!string.IsNullOrWhiteSpace(request.Username))
+        {
+            var usernameExists = await _context.Users.AnyAsync(u => u.Username == request.Username && u.Id != id, cancellationToken);
+            if (usernameExists)
+                return BadRequest(new { error = "اسم المستخدم موجود بالفعل" });
+            user.Username = request.Username;
+        }
+
         user.Email = request.Email;
         user.IsActive = request.IsActive;
 
@@ -278,6 +286,7 @@ public record CreateUserRequest
 
 public record UpdateUserRequest
 {
+    public string? Username { get; init; }
     public required string Email { get; init; }
     public required string FullName { get; init; }
     public required string Role { get; init; }

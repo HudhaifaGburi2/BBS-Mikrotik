@@ -45,6 +45,32 @@ public class SubscribersController : ControllerBase
         }
     }
 
+    [HttpGet("me")]
+    public async Task<ActionResult<SubscriberDto>> GetCurrentSubscriber()
+    {
+        try
+        {
+            var subscriberIdClaim = User.FindFirst("SubscriberId")?.Value;
+            if (string.IsNullOrEmpty(subscriberIdClaim) || !Guid.TryParse(subscriberIdClaim, out var subscriberId))
+            {
+                return Unauthorized(new { error = "لا يوجد معرف مشترك في الجلسة" });
+            }
+
+            var query = new GetSubscriberByIdQuery(subscriberId);
+            var result = await _mediator.Send(query);
+            return Ok(result);
+        }
+        catch (NotFoundException)
+        {
+            return NotFound(new { error = "المشترك غير موجود" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving current subscriber profile");
+            return StatusCode(500, new { error = "حدث خطأ أثناء جلب بيانات المشترك" });
+        }
+    }
+
     [HttpGet("{id}")]
     public async Task<ActionResult<SubscriberDto>> GetSubscriber(Guid id)
     {

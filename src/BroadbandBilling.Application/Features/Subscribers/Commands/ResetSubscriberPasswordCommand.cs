@@ -36,14 +36,32 @@ public class ResetSystemPasswordCommandHandler : IRequestHandler<ResetSystemPass
         if (subscriber == null)
             throw new NotFoundException($"Subscriber with ID {request.SubscriberId} not found");
 
-        if (!subscriber.UserId.HasValue || subscriber.UserId == Guid.Empty)
-            throw new InvalidOperationException("المشترك ليس لديه حساب نظام مرتبط");
+        User? user = null;
 
-        var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == subscriber.UserId.Value, cancellationToken);
+        if (subscriber.UserId.HasValue && subscriber.UserId != Guid.Empty)
+        {
+            user = await _context.Users.FirstOrDefaultAsync(u => u.Id == subscriber.UserId.Value, cancellationToken);
+        }
+
         if (user == null)
-            throw new NotFoundException("حساب النظام غير موجود");
+        {
+            // Auto-create a system User account for this subscriber (use email as username)
+            var username = subscriber.Email;
+            user = User.CreateSubscriber(
+                username,
+                subscriber.Email,
+                _passwordHasher.HashPassword(request.NewPassword),
+                subscriber.Id
+            );
+            _context.Users.Add(user);
+            subscriber.SetUserId(user.Id);
 
-        user.PasswordHash = _passwordHasher.HashPassword(request.NewPassword);
+            _logger.LogInformation("Auto-created system user {Username} for subscriber {SubscriberId}", username, subscriber.Id);
+        }
+        else
+        {
+            user.PasswordHash = _passwordHasher.HashPassword(request.NewPassword);
+        }
 
         await _context.SaveChangesAsync(cancellationToken);
 

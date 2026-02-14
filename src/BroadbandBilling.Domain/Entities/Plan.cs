@@ -17,7 +17,13 @@ public class Plan : IEntity
     public DateTime CreatedAt { get; private set; }
     public DateTime? UpdatedAt { get; private set; }
 
-    private Plan() { }
+    private Plan()
+    {
+        Name = null!;
+        Description = null!;
+        Price = null!;
+        MikroTikProfileName = null!;
+    }
 
     private Plan(string name, string description, Money price, int speedMbps, 
         int dataLimitGB, int billingCycleDays, string mikroTikProfileName)

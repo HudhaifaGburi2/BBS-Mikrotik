@@ -29,7 +29,16 @@ public class Invoice : IEntity
     private readonly List<Payment> _payments = new();
     public IReadOnlyCollection<Payment> Payments => _payments.AsReadOnly();
 
-    private Invoice() { }
+    private Invoice()
+    {
+        InvoiceNumber = null!;
+        Subtotal = null!;
+        TaxAmount = null!;
+        DiscountAmount = null!;
+        TotalAmount = null!;
+        PaidAmount = null!;
+        Subscriber = null!;
+    }
 
     private Invoice(string invoiceNumber, Guid subscriberId, Guid? subscriptionId,
         DateTime issueDate, DateTime dueDate, Money subtotal, Money taxAmount,
@@ -38,6 +47,7 @@ public class Invoice : IEntity
         Id = Guid.NewGuid();
         InvoiceNumber = invoiceNumber ?? throw new ArgumentNullException(nameof(invoiceNumber));
         SubscriberId = subscriberId;
+        Subscriber = null!;
         SubscriptionId = subscriptionId;
         IssueDate = issueDate;
         DueDate = dueDate;
@@ -45,6 +55,7 @@ public class Invoice : IEntity
         TaxAmount = taxAmount ?? Money.Zero(currency);
         DiscountAmount = discountAmount ?? Money.Zero(currency);
         PaidAmount = Money.Zero(currency);
+        TotalAmount = Money.Zero(currency);
         Status = InvoiceStatus.Pending;
         Notes = notes;
         CreatedAt = DateTime.UtcNow;

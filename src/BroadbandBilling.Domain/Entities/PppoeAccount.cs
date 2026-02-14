@@ -34,7 +34,15 @@ public class PppoeAccount : IEntity
     public Subscription Subscription { get; private set; }
     public MikroTikDevice MikroTikDevice { get; private set; }
 
-    private PppoeAccount() { }
+    private PppoeAccount()
+    {
+        Username = null!;
+        Password = null!;
+        ProfileName = null!;
+        Subscriber = null!;
+        Subscription = null!;
+        MikroTikDevice = null!;
+    }
 
     private PppoeAccount(Guid subscriberId, Guid subscriptionId, 
         Guid mikrotikDeviceId, string username, string password, 
@@ -44,6 +52,9 @@ public class PppoeAccount : IEntity
         SubscriberId = subscriberId;
         SubscriptionId = subscriptionId;
         MikroTikDeviceId = mikrotikDeviceId;
+        Subscriber = null!;
+        Subscription = null!;
+        MikroTikDevice = null!;
         Username = username ?? throw new ArgumentNullException(nameof(username));
         Password = password ?? throw new ArgumentNullException(nameof(password));
         StaticIpAddress = staticIpAddress;

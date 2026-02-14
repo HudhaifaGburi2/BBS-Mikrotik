@@ -27,7 +27,13 @@ public class MikroTikDevice : IEntity
     public DateTime CreatedAt { get; private set; }
     public DateTime? UpdatedAt { get; private set; }
 
-    private MikroTikDevice() { }
+    private MikroTikDevice()
+    {
+        Name = null!;
+        IpAddress = null!;
+        Username = null!;
+        Password = null!;
+    }
 
     private MikroTikDevice(string name, IpAddress ipAddress, int port,
         string username, string password, string? location)

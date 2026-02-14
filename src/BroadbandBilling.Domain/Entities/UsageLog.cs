@@ -23,7 +23,12 @@ public class UsageLog : IEntity
     public Subscription Subscription { get; private set; }
     public PppoeAccount PppoeAccount { get; private set; }
 
-    private UsageLog() { }
+    private UsageLog()
+    {
+        Subscriber = null!;
+        Subscription = null!;
+        PppoeAccount = null!;
+    }
 
     private UsageLog(Guid subscriberId, Guid subscriptionId, Guid pppoeAccountId,
         DateTime sessionStart, IpAddress? ipAddress, string? callingStationId)
@@ -32,6 +37,9 @@ public class UsageLog : IEntity
         SubscriberId = subscriberId;
         SubscriptionId = subscriptionId;
         PppoeAccountId = pppoeAccountId;
+        Subscriber = null!;
+        Subscription = null!;
+        PppoeAccount = null!;
         SessionStart = sessionStart;
         IpAddress = ipAddress;
         CallingStationId = callingStationId;

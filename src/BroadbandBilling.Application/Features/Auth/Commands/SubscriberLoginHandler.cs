@@ -34,13 +34,27 @@ public class SubscriberLoginHandler : IRequestHandler<SubscriberLoginCommand, Lo
 
     public async Task<LoginResponse> Handle(SubscriberLoginCommand request, CancellationToken cancellationToken)
     {
-        // Find user by username or email
+        // Find user by username, email, or phone number
         var user = await _context.Users
             .Include(u => u.Subscriber)
             .FirstOrDefaultAsync(u => 
-                (u.Username == request.Username || u.Email == request.Username) &&
+                (u.Username == request.Username || u.Email == request.Username ||
+                 (u.PhoneNumber != null && u.PhoneNumber == request.Username)) &&
                 u.UserType == UserType.Subscriber, 
                 cancellationToken);
+
+        // Also try finding by subscriber phone number if not found
+        if (user == null)
+        {
+            var subscriber = await _context.Subscribers
+                .FirstOrDefaultAsync(s => s.PhoneNumber == request.Username, cancellationToken);
+            if (subscriber != null && subscriber.UserId.HasValue)
+            {
+                user = await _context.Users
+                    .Include(u => u.Subscriber)
+                    .FirstOrDefaultAsync(u => u.Id == subscriber.UserId.Value, cancellationToken);
+            }
+        }
 
         if (user == null)
         {
