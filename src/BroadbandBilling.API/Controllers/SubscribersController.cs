@@ -206,6 +206,54 @@ public class SubscribersController : ControllerBase
         }
     }
 
+    [HttpPost("{id}/reset-system-password")]
+    public async Task<ActionResult> ResetSystemPassword(Guid id, [FromBody] ResetSystemPasswordCommand command)
+    {
+        try
+        {
+            var updatedCommand = command with { SubscriberId = id };
+            var newPassword = await _mediator.Send(updatedCommand);
+            return Ok(new { message = "تم تغيير كلمة مرور النظام بنجاح", password = newPassword });
+        }
+        catch (NotFoundException ex)
+        {
+            return NotFound(new { error = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error resetting system password: {SubscriberId}", id);
+            return StatusCode(500, new { error = "حدث خطأ أثناء تغيير كلمة مرور النظام" });
+        }
+    }
+
+    [HttpPost("{id}/reset-mikrotik-password")]
+    public async Task<ActionResult> ResetMikroTikPassword(Guid id, [FromBody] ResetMikroTikPasswordCommand command)
+    {
+        try
+        {
+            var updatedCommand = command with { SubscriberId = id };
+            var newPassword = await _mediator.Send(updatedCommand);
+            return Ok(new { message = "تم تغيير كلمة مرور MikroTik بنجاح", password = newPassword });
+        }
+        catch (NotFoundException ex)
+        {
+            return NotFound(new { error = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error resetting MikroTik password: {SubscriberId}", id);
+            return StatusCode(500, new { error = "حدث خطأ أثناء تغيير كلمة مرور MikroTik" });
+        }
+    }
+
     [HttpDelete("{id}")]
     public async Task<ActionResult> DeleteSubscriber(Guid id, [FromQuery] bool forceDelete = false)
     {
