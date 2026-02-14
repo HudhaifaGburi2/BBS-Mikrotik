@@ -62,8 +62,7 @@ public class PppoeAccount : IEntity
         if (subscriptionId == Guid.Empty)
             throw new ArgumentException("Subscription ID is required", nameof(subscriptionId));
 
-        if (mikrotikDeviceId == Guid.Empty)
-            throw new ArgumentException("MikroTik Device ID is required", nameof(mikrotikDeviceId));
+        // MikroTik device ID can be Guid.Empty when no device is configured yet
 
         if (string.IsNullOrWhiteSpace(username))
             throw new ArgumentException("Username is required", nameof(username));
