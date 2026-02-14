@@ -89,16 +89,16 @@ public class CreateSubscriberCommandHandler : IRequestHandler<CreateSubscriberCo
             // Create PPPoE account if credentials provided
             if (!string.IsNullOrEmpty(request.PppUsername) && !string.IsNullOrEmpty(request.PppPassword))
             {
-                // Get first MikroTik device (you might want to make this configurable)
+                // Get first MikroTik device — optional, sync will happen later if not available
                 var mikroTikDevices = await _unitOfWork.MikroTikDevices.GetAllAsync(cancellationToken);
                 var mikroTikDevice = mikroTikDevices.FirstOrDefault(d => d.IsActive);
-                if (mikroTikDevice == null)
-                    throw new InvalidOperationException("No active MikroTik device configured");
+
+                var deviceId = mikroTikDevice?.Id ?? Guid.Empty;
 
                 var pppoeAccount = PppoeAccount.Create(
                     subscriber.Id,
                     subscription.Id,
-                    mikroTikDevice.Id,
+                    deviceId,
                     request.PppUsername,
                     request.PppPassword,
                     plan.MikroTikProfileName
@@ -106,8 +106,15 @@ public class CreateSubscriberCommandHandler : IRequestHandler<CreateSubscriberCo
 
                 await _unitOfWork.PppoeAccounts.AddAsync(pppoeAccount, cancellationToken);
 
-                // Sync with MikroTik
-                await SyncPppoeAccountWithMikroTik(pppoeAccount, mikroTikDevice, cancellationToken);
+                // MikroTik sync is bypassed — admin can trigger sync manually later
+                if (mikroTikDevice != null)
+                {
+                    _logger.LogInformation("MikroTik device found but sync bypassed for subscriber {SubscriberId}. PPPoE account saved for manual sync.", subscriber.Id);
+                }
+                else
+                {
+                    _logger.LogWarning("No active MikroTik device configured. PPPoE account for subscriber {SubscriberId} saved without sync.", subscriber.Id);
+                }
             }
         }
 
