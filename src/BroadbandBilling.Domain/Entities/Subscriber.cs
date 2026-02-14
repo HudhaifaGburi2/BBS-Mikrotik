@@ -20,6 +20,11 @@ public class Subscriber : IEntity
     public string? LastLoginBrowser { get; private set; }
     public string? LastLoginOS { get; private set; }
     
+    // Network Information
+    public string? MacAddress { get; private set; }
+    public string? IpAddress { get; private set; }
+    public string? MikroTikUsername { get; private set; }
+    
     public DateTime CreatedAt { get; private set; }
     public DateTime? UpdatedAt { get; private set; }
 
@@ -111,6 +116,20 @@ public class Subscriber : IEntity
         LastLoginDevice = deviceName;
         LastLoginBrowser = browser;
         LastLoginOS = os;
+        UpdatedAt = DateTime.UtcNow;
+    }
+    
+    public void UpdateNetworkInfo(string? macAddress, string? ipAddress, string? mikroTikUsername)
+    {
+        MacAddress = macAddress;
+        IpAddress = ipAddress;
+        MikroTikUsername = mikroTikUsername;
+        UpdatedAt = DateTime.UtcNow;
+    }
+    
+    public void SetUserId(Guid userId)
+    {
+        UserId = userId;
         UpdatedAt = DateTime.UtcNow;
     }
 }

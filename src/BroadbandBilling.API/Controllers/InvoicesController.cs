@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using AutoMapper;
 using BroadbandBilling.Application.Common.DTOs;
 using BroadbandBilling.Application.Common.Interfaces;
 using BroadbandBilling.Application.UseCases.Billing.GenerateInvoice;
@@ -13,73 +12,53 @@ namespace BroadbandBilling.API.Controllers;
 [Authorize]
 public class InvoicesController : ControllerBase
 {
-    private readonly GenerateInvoiceHandler _generateInvoiceHandler;
-    private readonly IUnitOfWork _unitOfWork;
-    private readonly IMapper _mapper;
+    private readonly IInvoiceService _invoiceService;
 
-    public InvoicesController(
-        GenerateInvoiceHandler generateInvoiceHandler,
-        IUnitOfWork unitOfWork,
-        IMapper mapper)
+    public InvoicesController(IInvoiceService invoiceService)
     {
-        _generateInvoiceHandler = generateInvoiceHandler;
-        _unitOfWork = unitOfWork;
-        _mapper = mapper;
+        _invoiceService = invoiceService;
     }
 
     [HttpGet]
-    public async Task<ActionResult<ApiResponse<IEnumerable<InvoiceDto>>>> GetAll()
+    public async Task<ActionResult<ApiResponse<IEnumerable<InvoiceDto>>>> GetAll(CancellationToken cancellationToken)
     {
-        var invoices = await _unitOfWork.Invoices.GetAllAsync();
-        var invoiceDtos = _mapper.Map<IEnumerable<InvoiceDto>>(invoices);
-        
-        return Ok(ApiResponse<IEnumerable<InvoiceDto>>
-            .SuccessResponse(invoiceDtos, "Invoices retrieved successfully"));
+        var result = await _invoiceService.GetAllAsync(cancellationToken);
+        return Ok(result);
     }
 
     [HttpGet("{id}")]
-    public async Task<ActionResult<ApiResponse<InvoiceDto>>> GetById(Guid id)
+    public async Task<ActionResult<ApiResponse<InvoiceDto>>> GetById(Guid id, CancellationToken cancellationToken)
     {
-        var invoice = await _unitOfWork.Invoices.GetWithPaymentsAsync(id);
-        if (invoice == null)
-        {
-            return NotFound(ApiResponse<InvoiceDto>
-                .FailureResponse("Invoice not found", $"Invoice with ID {id} not found"));
-        }
+        var result = await _invoiceService.GetByIdAsync(id, cancellationToken);
+        if (!result.Success)
+            return NotFound(result);
 
-        var invoiceDto = _mapper.Map<InvoiceDto>(invoice);
-        
-        return Ok(ApiResponse<InvoiceDto>.SuccessResponse(invoiceDto, "Invoice retrieved successfully"));
+        return Ok(result);
     }
 
     [HttpGet("subscriber/{subscriberId}")]
-    public async Task<ActionResult<ApiResponse<IEnumerable<InvoiceDto>>>> GetBySubscriber(Guid subscriberId)
+    public async Task<ActionResult<ApiResponse<IEnumerable<InvoiceDto>>>> GetBySubscriber(
+        Guid subscriberId, CancellationToken cancellationToken)
     {
-        var invoices = await _unitOfWork.Invoices.GetBySubscriberIdAsync(subscriberId);
-        var invoiceDtos = _mapper.Map<IEnumerable<InvoiceDto>>(invoices);
-        
-        return Ok(ApiResponse<IEnumerable<InvoiceDto>>
-            .SuccessResponse(invoiceDtos, "Invoices retrieved successfully"));
+        var result = await _invoiceService.GetBySubscriberIdAsync(subscriberId, cancellationToken);
+        return Ok(result);
     }
 
     [HttpGet("overdue")]
-    public async Task<ActionResult<ApiResponse<IEnumerable<InvoiceDto>>>> GetOverdue()
+    public async Task<ActionResult<ApiResponse<IEnumerable<InvoiceDto>>>> GetOverdue(CancellationToken cancellationToken)
     {
-        var invoices = await _unitOfWork.Invoices.GetOverdueInvoicesAsync();
-        var invoiceDtos = _mapper.Map<IEnumerable<InvoiceDto>>(invoices);
-        
-        return Ok(ApiResponse<IEnumerable<InvoiceDto>>
-            .SuccessResponse(invoiceDtos, "Overdue invoices retrieved successfully"));
+        var result = await _invoiceService.GetOverdueAsync(cancellationToken);
+        return Ok(result);
     }
 
     [HttpPost]
-    public async Task<ActionResult<ApiResponse<InvoiceDto>>> Create([FromBody] GenerateInvoiceCommand command)
+    public async Task<ActionResult<ApiResponse<InvoiceDto>>> Create(
+        [FromBody] GenerateInvoiceCommand command, CancellationToken cancellationToken)
     {
-        var result = await _generateInvoiceHandler.HandleAsync(command);
-        
-        return CreatedAtAction(
-            nameof(GetById),
-            new { id = result.Invoice.Id },
-            ApiResponse<InvoiceDto>.SuccessResponse(result.Invoice, "Invoice created successfully"));
+        var result = await _invoiceService.GenerateAsync(command, cancellationToken);
+        if (!result.Success)
+            return BadRequest(result);
+
+        return CreatedAtAction(nameof(GetById), new { id = result.Data!.Id }, result);
     }
 }

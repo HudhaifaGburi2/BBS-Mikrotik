@@ -313,7 +313,7 @@ public class MikroTikService : IMikroTikService
                     LocalAddress = p.LocalAddress,
                     RemoteAddress = p.RemoteAddress,
                     RateLimit = p.RateLimit,
-                    OnlyOne = p.OnlyOne
+                    OnlyOne = bool.TryParse(p.OnlyOne, out var onlyOne) && onlyOne
                 }).ToList();
 
                 _logger.LogInformation("Retrieved {Count} PPP profiles from MikroTik at {Host}", profileList.Count, request.Host);

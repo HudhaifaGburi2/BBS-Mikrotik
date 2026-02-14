@@ -1,10 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using AutoMapper;
 using BroadbandBilling.Application.Common.DTOs;
 using BroadbandBilling.Application.Common.Interfaces;
 using BroadbandBilling.Application.UseCases.Subscriptions.CreateSubscription;
-using BroadbandBilling.Application.UseCases.Subscriptions.RenewSubscription;
 using BroadbandBilling.Application.UseCases.Subscriptions.DTOs;
 
 namespace BroadbandBilling.API.Controllers;
@@ -14,116 +12,70 @@ namespace BroadbandBilling.API.Controllers;
 [Authorize]
 public class SubscriptionsController : ControllerBase
 {
-    private readonly CreateSubscriptionHandler _createSubscriptionHandler;
-    private readonly RenewSubscriptionHandler _renewSubscriptionHandler;
-    private readonly IUnitOfWork _unitOfWork;
-    private readonly IMapper _mapper;
+    private readonly ISubscriptionService _subscriptionService;
 
-    public SubscriptionsController(
-        CreateSubscriptionHandler createSubscriptionHandler,
-        RenewSubscriptionHandler renewSubscriptionHandler,
-        IUnitOfWork unitOfWork,
-        IMapper mapper)
+    public SubscriptionsController(ISubscriptionService subscriptionService)
     {
-        _createSubscriptionHandler = createSubscriptionHandler;
-        _renewSubscriptionHandler = renewSubscriptionHandler;
-        _unitOfWork = unitOfWork;
-        _mapper = mapper;
+        _subscriptionService = subscriptionService;
     }
 
     [HttpGet]
-    public async Task<ActionResult<ApiResponse<IEnumerable<SubscriptionDto>>>> GetAll()
+    public async Task<ActionResult<ApiResponse<IEnumerable<SubscriptionDto>>>> GetAll(CancellationToken cancellationToken)
     {
-        var subscriptions = await _unitOfWork.Subscriptions.GetAllAsync();
-        var subscriptionDtos = _mapper.Map<IEnumerable<SubscriptionDto>>(subscriptions);
-        
-        return Ok(ApiResponse<IEnumerable<SubscriptionDto>>
-            .SuccessResponse(subscriptionDtos, "Subscriptions retrieved successfully"));
+        var result = await _subscriptionService.GetAllAsync(cancellationToken);
+        return Ok(result);
     }
 
     [HttpGet("{id}")]
-    public async Task<ActionResult<ApiResponse<SubscriptionDto>>> GetById(Guid id)
+    public async Task<ActionResult<ApiResponse<SubscriptionDto>>> GetById(Guid id, CancellationToken cancellationToken)
     {
-        var subscription = await _unitOfWork.Subscriptions.GetWithDetailsAsync(id);
-        if (subscription == null)
-        {
-            return NotFound(ApiResponse<SubscriptionDto>
-                .FailureResponse("Subscription not found", $"Subscription with ID {id} not found"));
-        }
+        var result = await _subscriptionService.GetByIdAsync(id, cancellationToken);
+        if (!result.Success)
+            return NotFound(result);
 
-        var subscriptionDto = _mapper.Map<SubscriptionDto>(subscription);
-        
-        return Ok(ApiResponse<SubscriptionDto>
-            .SuccessResponse(subscriptionDto, "Subscription retrieved successfully"));
+        return Ok(result);
     }
 
     [HttpPost]
-    public async Task<ActionResult<ApiResponse<SubscriptionDto>>> Create([FromBody] CreateSubscriptionCommand command)
+    public async Task<ActionResult<ApiResponse<SubscriptionDto>>> Create(
+        [FromBody] CreateSubscriptionCommand command, CancellationToken cancellationToken)
     {
-        var validator = new CreateSubscriptionValidator();
-        var validationResult = await validator.ValidateAsync(command);
+        var result = await _subscriptionService.CreateAsync(command, cancellationToken);
+        if (!result.Success)
+            return BadRequest(result);
 
-        if (!validationResult.IsValid)
-        {
-            var errors = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
-            return BadRequest(ApiResponse<SubscriptionDto>.FailureResponse("Validation failed", errors));
-        }
-
-        var result = await _createSubscriptionHandler.HandleAsync(command);
-        
-        return CreatedAtAction(
-            nameof(GetById),
-            new { id = result.Subscription.Id },
-            ApiResponse<SubscriptionDto>.SuccessResponse(result.Subscription, "Subscription created successfully"));
+        return CreatedAtAction(nameof(GetById), new { id = result.Data!.Id }, result);
     }
 
     [HttpPost("{id}/renew")]
-    public async Task<ActionResult<ApiResponse<SubscriptionDto>>> Renew(Guid id)
+    public async Task<ActionResult<ApiResponse<SubscriptionDto>>> Renew(Guid id, CancellationToken cancellationToken)
     {
-        var command = new RenewSubscriptionCommand { SubscriptionId = id };
-        var result = await _renewSubscriptionHandler.HandleAsync(command);
-        
-        return Ok(ApiResponse<SubscriptionDto>
-            .SuccessResponse(result.Subscription, "Subscription renewed successfully"));
+        var result = await _subscriptionService.RenewAsync(id, cancellationToken);
+        if (!result.Success)
+            return NotFound(result);
+
+        return Ok(result);
     }
 
     [HttpPost("{id}/suspend")]
-    public async Task<ActionResult<ApiResponse<SubscriptionDto>>> Suspend(Guid id, [FromBody] SuspendSubscriptionDto dto)
+    public async Task<ActionResult<ApiResponse<SubscriptionDto>>> Suspend(
+        Guid id, [FromBody] SuspendSubscriptionDto dto, CancellationToken cancellationToken)
     {
-        var subscription = await _unitOfWork.Subscriptions.GetByIdAsync(id);
-        if (subscription == null)
-        {
-            return NotFound(ApiResponse<SubscriptionDto>
-                .FailureResponse("Subscription not found", $"Subscription with ID {id} not found"));
-        }
+        var result = await _subscriptionService.SuspendAsync(id, cancellationToken);
+        if (!result.Success)
+            return NotFound(result);
 
-        subscription.Suspend();
-        _unitOfWork.Subscriptions.Update(subscription);
-        await _unitOfWork.CommitAsync();
-
-        var subscriptionDto = _mapper.Map<SubscriptionDto>(subscription);
-        
-        return Ok(ApiResponse<SubscriptionDto>
-            .SuccessResponse(subscriptionDto, "Subscription suspended successfully"));
+        return Ok(result);
     }
 
     [HttpPost("{id}/cancel")]
-    public async Task<ActionResult<ApiResponse<SubscriptionDto>>> Cancel(Guid id, [FromBody] CancelSubscriptionDto dto)
+    public async Task<ActionResult<ApiResponse<SubscriptionDto>>> Cancel(
+        Guid id, [FromBody] CancelSubscriptionDto dto, CancellationToken cancellationToken)
     {
-        var subscription = await _unitOfWork.Subscriptions.GetByIdAsync(id);
-        if (subscription == null)
-        {
-            return NotFound(ApiResponse<SubscriptionDto>
-                .FailureResponse("Subscription not found", $"Subscription with ID {id} not found"));
-        }
+        var result = await _subscriptionService.CancelAsync(id, dto.Reason, cancellationToken);
+        if (!result.Success)
+            return NotFound(result);
 
-        subscription.Cancel(dto.Reason);
-        _unitOfWork.Subscriptions.Update(subscription);
-        await _unitOfWork.CommitAsync();
-
-        var subscriptionDto = _mapper.Map<SubscriptionDto>(subscription);
-        
-        return Ok(ApiResponse<SubscriptionDto>
-            .SuccessResponse(subscriptionDto, "Subscription cancelled successfully"));
+        return Ok(result);
     }
 }

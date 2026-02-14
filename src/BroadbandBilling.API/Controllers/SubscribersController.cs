@@ -1,3 +1,4 @@
+using BroadbandBilling.Application.Common.Interfaces;
 using BroadbandBilling.Application.Features.Subscribers.Commands;
 using BroadbandBilling.Application.Features.Subscribers.DTOs;
 using BroadbandBilling.Application.Features.Subscribers.Queries;

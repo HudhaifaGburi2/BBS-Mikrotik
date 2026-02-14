@@ -84,24 +84,14 @@ public class SubscriberLoginHandler : IRequestHandler<SubscriberLoginCommand, Lo
             .Include(p => p.MikroTikDevice)
             .FirstOrDefaultAsync(p => p.SubscriberId == user.Subscriber.Id, cancellationToken);
 
-        // Validate MikroTik credentials if PPPoE account exists (skip for now as ValidateCredentialsAsync not implemented)
-        if (pppoeAccount != null && pppoeAccount.IsEnabled)
-        {
-            // var isValid = await _mikroTikService.ValidateCredentialsAsync(
-            //     pppoeAccount.MikroTikDevice.IpAddress.Value,
-            //     pppoeAccount.MikroTikDevice.Port,
-            //     pppoeAccount.MikroTikDevice.Username,
-            //     pppoeAccount.MikroTikDevice.Password,
-            //     pppoeAccount.Username,
-            //     pppoeAccount.Password
-            // );
-
-            // if (!isValid)
-            // {
-            //     throw new UnauthorizedAccessException("Invalid PPPoE credentials");
-            // }
-            throw new UnauthorizedException("بيانات اعتماد الإنترنت غير صحيحة. يرجى الاتصال بالدعم");
-        }
+        // MikroTik credential validation skipped - not yet implemented
+        // When ValidateCredentialsAsync is ready, uncomment below:
+        // if (pppoeAccount != null && pppoeAccount.IsEnabled)
+        // {
+        //     var connectionRequest = new MikroTikConnectionRequest { ... };
+        //     var isValid = await _mikroTikService.ValidateCredentialsAsync(...);
+        //     if (!isValid) throw new UnauthorizedException("بيانات اعتماد الإنترنت غير صحيحة");
+        // }
 
         // Generate tokens
         var accessToken = _jwtService.GenerateAccessToken(user, "Subscriber");

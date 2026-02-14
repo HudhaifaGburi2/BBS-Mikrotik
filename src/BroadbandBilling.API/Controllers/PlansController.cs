@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using AutoMapper;
 using BroadbandBilling.Application.Common.DTOs;
 using BroadbandBilling.Application.Common.Interfaces;
 using BroadbandBilling.Application.UseCases.Plans.CreatePlan;
@@ -13,102 +12,62 @@ namespace BroadbandBilling.API.Controllers;
 [Authorize]
 public class PlansController : ControllerBase
 {
-    private readonly CreatePlanHandler _createPlanHandler;
-    private readonly IUnitOfWork _unitOfWork;
-    private readonly IMapper _mapper;
+    private readonly IPlanService _planService;
 
-    public PlansController(
-        CreatePlanHandler createPlanHandler,
-        IUnitOfWork unitOfWork,
-        IMapper mapper)
+    public PlansController(IPlanService planService)
     {
-        _createPlanHandler = createPlanHandler;
-        _unitOfWork = unitOfWork;
-        _mapper = mapper;
+        _planService = planService;
     }
 
     [HttpGet]
     [AllowAnonymous]
-    public async Task<ActionResult<ApiResponse<IEnumerable<PlanDto>>>> GetAll([FromQuery] bool activeOnly = true)
+    public async Task<ActionResult<ApiResponse<IEnumerable<PlanDto>>>> GetAll(
+        [FromQuery] bool activeOnly = true, CancellationToken cancellationToken = default)
     {
-        var plans = activeOnly
-            ? await _unitOfWork.Plans.GetActivePlansAsync()
-            : await _unitOfWork.Plans.GetAllAsync();
-
-        var planDtos = _mapper.Map<IEnumerable<PlanDto>>(plans);
-        
-        return Ok(ApiResponse<IEnumerable<PlanDto>>
-            .SuccessResponse(planDtos, "Plans retrieved successfully"));
+        var result = await _planService.GetAllAsync(activeOnly, cancellationToken);
+        return Ok(result);
     }
 
     [HttpGet("{id}")]
     [AllowAnonymous]
-    public async Task<ActionResult<ApiResponse<PlanDto>>> GetById(Guid id)
+    public async Task<ActionResult<ApiResponse<PlanDto>>> GetById(Guid id, CancellationToken cancellationToken)
     {
-        var plan = await _unitOfWork.Plans.GetByIdAsync(id);
-        if (plan == null)
-        {
-            return NotFound(ApiResponse<PlanDto>
-                .FailureResponse("Plan not found", $"Plan with ID {id} not found"));
-        }
+        var result = await _planService.GetByIdAsync(id, cancellationToken);
+        if (!result.Success)
+            return NotFound(result);
 
-        var planDto = _mapper.Map<PlanDto>(plan);
-        
-        return Ok(ApiResponse<PlanDto>.SuccessResponse(planDto, "Plan retrieved successfully"));
+        return Ok(result);
     }
 
     [HttpPost]
-    public async Task<ActionResult<ApiResponse<PlanDto>>> Create([FromBody] CreatePlanCommand command)
+    public async Task<ActionResult<ApiResponse<PlanDto>>> Create(
+        [FromBody] CreatePlanCommand command, CancellationToken cancellationToken)
     {
-        var validator = new CreatePlanValidator();
-        var validationResult = await validator.ValidateAsync(command);
+        var result = await _planService.CreateAsync(command, cancellationToken);
+        if (!result.Success)
+            return BadRequest(result);
 
-        if (!validationResult.IsValid)
-        {
-            var errors = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
-            return BadRequest(ApiResponse<PlanDto>.FailureResponse("Validation failed", errors));
-        }
-
-        var result = await _createPlanHandler.HandleAsync(command);
-        
-        return CreatedAtAction(
-            nameof(GetById),
-            new { id = result.Plan.Id },
-            ApiResponse<PlanDto>.SuccessResponse(result.Plan, "Plan created successfully"));
+        return CreatedAtAction(nameof(GetById), new { id = result.Data!.Id }, result);
     }
 
     [HttpPut("{id}")]
-    public async Task<ActionResult<ApiResponse<PlanDto>>> Update(Guid id, [FromBody] UpdatePlanDto dto)
+    public async Task<ActionResult<ApiResponse<PlanDto>>> Update(
+        Guid id, [FromBody] UpdatePlanDto dto, CancellationToken cancellationToken)
     {
-        var plan = await _unitOfWork.Plans.GetByIdAsync(id);
-        if (plan == null)
-        {
-            return NotFound(ApiResponse<PlanDto>
-                .FailureResponse("Plan not found", $"Plan with ID {id} not found"));
-        }
+        var result = await _planService.UpdateAsync(id, dto, cancellationToken);
+        if (!result.Success)
+            return NotFound(result);
 
-        _unitOfWork.Plans.Update(plan);
-        await _unitOfWork.CommitAsync();
-
-        var planDto = _mapper.Map<PlanDto>(plan);
-        
-        return Ok(ApiResponse<PlanDto>.SuccessResponse(planDto, "Plan updated successfully"));
+        return Ok(result);
     }
 
     [HttpDelete("{id}")]
-    public async Task<ActionResult<ApiResponse<bool>>> Delete(Guid id)
+    public async Task<ActionResult<ApiResponse<bool>>> Delete(Guid id, CancellationToken cancellationToken)
     {
-        var plan = await _unitOfWork.Plans.GetByIdAsync(id);
-        if (plan == null)
-        {
-            return NotFound(ApiResponse<bool>
-                .FailureResponse("Plan not found", $"Plan with ID {id} not found"));
-        }
+        var result = await _planService.DeleteAsync(id, cancellationToken);
+        if (!result.Success)
+            return NotFound(result);
 
-        plan.Deactivate();
-        _unitOfWork.Plans.Update(plan);
-        await _unitOfWork.CommitAsync();
-        
-        return Ok(ApiResponse<bool>.SuccessResponse(true, "Plan deactivated successfully"));
+        return Ok(result);
     }
 }

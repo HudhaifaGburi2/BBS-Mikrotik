@@ -75,8 +75,7 @@ namespace BroadbandBilling.Infrastructure.Data.Migrations
 
                     b.Property<string>("InvoiceNumber")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
+                        .HasColumnType("NVARCHAR(50)");
 
                     b.Property<DateTime>("IssueDate")
                         .HasColumnType("datetime2");
@@ -223,8 +222,7 @@ namespace BroadbandBilling.Infrastructure.Data.Migrations
 
                     b.Property<string>("Username")
                         .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                        .HasColumnType("NVARCHAR(100)");
 
                     b.HasKey("Id");
 
@@ -277,8 +275,7 @@ namespace BroadbandBilling.Infrastructure.Data.Migrations
 
                     b.Property<string>("PaymentReference")
                         .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                        .HasColumnType("NVARCHAR(100)");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -288,8 +285,7 @@ namespace BroadbandBilling.Infrastructure.Data.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("TransactionId")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
+                        .HasColumnType("NVARCHAR(200)");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
@@ -451,8 +447,7 @@ namespace BroadbandBilling.Infrastructure.Data.Migrations
 
                     b.Property<string>("ProfileName")
                         .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                        .HasColumnType("NVARCHAR(100)");
 
                     b.Property<Guid>("SubscriberId")
                         .HasColumnType("uniqueidentifier");
@@ -519,6 +514,9 @@ namespace BroadbandBilling.Infrastructure.Data.Migrations
                         .IsRequired()
                         .HasColumnType("NVARCHAR(200)");
 
+                    b.Property<string>("IpAddress")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
@@ -531,9 +529,14 @@ namespace BroadbandBilling.Infrastructure.Data.Migrations
                     b.Property<string>("LastLoginOS")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("MacAddress")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("MikroTikUsername")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("NationalId")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
+                        .HasColumnType("NVARCHAR(50)");
 
                     b.Property<string>("PhoneNumber")
                         .IsRequired()
@@ -541,8 +544,7 @@ namespace BroadbandBilling.Infrastructure.Data.Migrations
                         .HasColumnType("nvarchar(20)");
 
                     b.Property<string>("PostalCode")
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
+                        .HasColumnType("NVARCHAR(20)");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
@@ -792,7 +794,7 @@ namespace BroadbandBilling.Infrastructure.Data.Migrations
 
                             b1.HasKey("InvoiceId");
 
-                            b1.ToTable("Invoices", (string)null);
+                            b1.ToTable("Invoices");
 
                             b1.WithOwner()
                                 .HasForeignKey("InvoiceId");
@@ -816,7 +818,7 @@ namespace BroadbandBilling.Infrastructure.Data.Migrations
 
                             b1.HasKey("InvoiceId");
 
-                            b1.ToTable("Invoices", (string)null);
+                            b1.ToTable("Invoices");
 
                             b1.WithOwner()
                                 .HasForeignKey("InvoiceId");
@@ -840,7 +842,7 @@ namespace BroadbandBilling.Infrastructure.Data.Migrations
 
                             b1.HasKey("InvoiceId");
 
-                            b1.ToTable("Invoices", (string)null);
+                            b1.ToTable("Invoices");
 
                             b1.WithOwner()
                                 .HasForeignKey("InvoiceId");
@@ -864,7 +866,7 @@ namespace BroadbandBilling.Infrastructure.Data.Migrations
 
                             b1.HasKey("InvoiceId");
 
-                            b1.ToTable("Invoices", (string)null);
+                            b1.ToTable("Invoices");
 
                             b1.WithOwner()
                                 .HasForeignKey("InvoiceId");
@@ -888,7 +890,7 @@ namespace BroadbandBilling.Infrastructure.Data.Migrations
 
                             b1.HasKey("InvoiceId");
 
-                            b1.ToTable("Invoices", (string)null);
+                            b1.ToTable("Invoices");
 
                             b1.WithOwner()
                                 .HasForeignKey("InvoiceId");
@@ -940,7 +942,7 @@ namespace BroadbandBilling.Infrastructure.Data.Migrations
 
                             b1.HasKey("MikroTikDeviceId");
 
-                            b1.ToTable("MikroTikDevices", (string)null);
+                            b1.ToTable("MikroTikDevices");
 
                             b1.WithOwner()
                                 .HasForeignKey("MikroTikDeviceId");
@@ -989,7 +991,7 @@ namespace BroadbandBilling.Infrastructure.Data.Migrations
 
                             b1.HasKey("PaymentId");
 
-                            b1.ToTable("Payments", (string)null);
+                            b1.ToTable("Payments");
 
                             b1.WithOwner()
                                 .HasForeignKey("PaymentId");
@@ -1023,7 +1025,7 @@ namespace BroadbandBilling.Infrastructure.Data.Migrations
 
                             b1.HasKey("PlanId");
 
-                            b1.ToTable("Plans", (string)null);
+                            b1.ToTable("Plans");
 
                             b1.WithOwner()
                                 .HasForeignKey("PlanId");
@@ -1096,7 +1098,7 @@ namespace BroadbandBilling.Infrastructure.Data.Migrations
 
                             b1.HasKey("PppoeAccountId");
 
-                            b1.ToTable("PppoeAccounts", (string)null);
+                            b1.ToTable("PppoeAccounts");
 
                             b1.WithOwner()
                                 .HasForeignKey("PppoeAccountId");
@@ -1140,7 +1142,7 @@ namespace BroadbandBilling.Infrastructure.Data.Migrations
 
                             b1.HasKey("SubscriptionId");
 
-                            b1.ToTable("Subscriptions", (string)null);
+                            b1.ToTable("Subscriptions");
 
                             b1.WithOwner()
                                 .HasForeignKey("SubscriptionId");
@@ -1187,7 +1189,7 @@ namespace BroadbandBilling.Infrastructure.Data.Migrations
 
                             b1.HasKey("UsageLogId");
 
-                            b1.ToTable("UsageLogs", (string)null);
+                            b1.ToTable("UsageLogs");
 
                             b1.WithOwner()
                                 .HasForeignKey("UsageLogId");

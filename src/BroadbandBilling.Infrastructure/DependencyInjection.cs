@@ -35,6 +35,10 @@ public static class DependencyInjection
         services.AddScoped<IUsageLogRepository, UsageLogRepository>();
 
         services.AddScoped<IMikroTikService, MikroTikService>();
+        services.AddScoped<ISubscriptionService, SubscriptionService>();
+        services.AddScoped<IPlanService, PlanService>();
+        services.AddScoped<IPaymentService, PaymentService>();
+        services.AddScoped<IInvoiceService, InvoiceService>();
         services.AddScoped<IEmailService, EmailService>();
         services.AddScoped<ISmsService, SmsService>();
         services.AddScoped<BroadbandBilling.Application.Interfaces.IPasswordHasher, PasswordHasher>();
