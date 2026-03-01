@@ -6,7 +6,7 @@ namespace BroadbandBilling.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Roles = "SuperAdmin,Admin")]
+[Authorize(Roles = "SuperAdmin,Manager,Support,Accountant")]
 public class MikroTikController : ControllerBase
 {
     private readonly IMikroTikService _mikroTikService;

@@ -3,10 +3,12 @@ import { ref, computed } from 'vue'
 import http from '@/services/http'
 import type { UserData, UserType } from '@/types'
 
+const AUTH_STORAGE_KEY = 'doshi_auth_user'
+
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<UserData | null>(null)
   const isLoading = ref(false)
-  const sessionChecked = ref(false)
+  const initialized = ref(false)
 
   const isAuthenticated = computed(() => user.value !== null)
   const isAdmin = computed(() => user.value?.userType === 'Admin')
@@ -14,16 +16,43 @@ export const useAuthStore = defineStore('auth', () => {
   const userType = computed(() => user.value?.userType ?? null)
   const fullName = computed(() => user.value?.fullName ?? '')
 
+  // Initialize from localStorage on store creation
+  function initFromStorage() {
+    if (initialized.value) return
+    try {
+      const stored = localStorage.getItem(AUTH_STORAGE_KEY)
+      if (stored) {
+        const parsed = JSON.parse(stored)
+        if (parsed && parsed.userType) {
+          user.value = parsed
+          console.log('[Auth] Restored user from storage:', parsed.userType)
+        }
+      }
+    } catch (e) {
+      console.error('[Auth] Failed to restore from storage:', e)
+      localStorage.removeItem(AUTH_STORAGE_KEY)
+    }
+    initialized.value = true
+  }
+
+  // Call init immediately
+  initFromStorage()
+
   function setUser(data: UserData) {
     user.value = data
-    sessionChecked.value = true
+    // Persist to localStorage
+    try {
+      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(data))
+      console.log('[Auth] User saved to storage:', data.userType)
+    } catch (e) {
+      console.error('[Auth] Failed to save to storage:', e)
+    }
   }
 
   function clearUser() {
     user.value = null
-    sessionChecked.value = false
-    // Clear persisted state
-    sessionStorage.removeItem('pinia-auth')
+    localStorage.removeItem(AUTH_STORAGE_KEY)
+    console.log('[Auth] User cleared from storage')
   }
 
   async function login(username: string, password: string, rememberMe = false): Promise<UserType> {
@@ -74,36 +103,41 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function checkSession(): Promise<boolean> {
-    // If we already have user data from persistence, trust it
+    // If we already have user data from localStorage, trust it
     // The JWT cookie will be validated by the backend on actual API calls
     if (user.value !== null) {
-      sessionChecked.value = true
+      console.log('[Auth] checkSession: User exists in store, returning true')
       return true
     }
 
     // Try to restore from API only if no persisted state
+    console.log('[Auth] checkSession: No user in store, calling /auth/me')
     try {
       isLoading.value = true
       const res = await http.get<UserData>('/auth/me')
       if (res.data) {
         setUser(res.data)
+        console.log('[Auth] checkSession: Got user from API:', res.data.userType)
         return true
       }
+      console.log('[Auth] checkSession: No data from API')
       return false
-    } catch {
-      // Don't clear user here - let the 401 interceptor handle it
-      // This prevents logout on temporary network issues
+    } catch (err: any) {
+      console.log('[Auth] checkSession: API error:', err.response?.status || err.message)
+      // Only clear if it's a 401 - other errors might be temporary
+      if (err.response?.status === 401) {
+        clearUser()
+      }
       return false
     } finally {
       isLoading.value = false
-      sessionChecked.value = true
     }
   }
 
   return {
     user,
     isLoading,
-    sessionChecked,
+    initialized,
     isAuthenticated,
     isAdmin,
     isSubscriber,
@@ -114,5 +148,6 @@ export const useAuthStore = defineStore('auth', () => {
     checkSession,
     setUser,
     clearUser,
+    initFromStorage,
   }
 })

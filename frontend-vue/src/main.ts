@@ -3,12 +3,10 @@ import { createPinia } from 'pinia'
 import router from './router'
 import App from './App.vue'
 import './style.css'
-import { createPersistedState } from './plugins/pinia-persist'
 
 const app = createApp(App)
 
 const pinia = createPinia()
-pinia.use(createPersistedState())
 
 app.use(pinia)
 app.use(router)
