@@ -143,11 +143,13 @@ public class AuthController : ControllerBase
     {
         var isDev = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development";
 
+        // In development, use SameSite=None with Secure=false for cross-origin cookie handling
+        // This allows cookies to work through the Vite proxy
         var accessCookieOptions = new CookieOptions
         {
             HttpOnly = true,
-            Secure = !isDev,
-            SameSite = isDev ? SameSiteMode.Lax : SameSiteMode.Strict,
+            Secure = false,  // Must be false for localhost without HTTPS
+            SameSite = SameSiteMode.Lax,  // Lax allows cookies on same-site navigations
             Path = "/",
             Expires = DateTimeOffset.UtcNow.AddSeconds(expiresInSeconds)
         };
@@ -155,9 +157,9 @@ public class AuthController : ControllerBase
         var refreshCookieOptions = new CookieOptions
         {
             HttpOnly = true,
-            Secure = !isDev,
-            SameSite = isDev ? SameSiteMode.Lax : SameSiteMode.Strict,
-            Path = "/",  // Changed from /api/auth to / for better cookie handling through proxy
+            Secure = false,  // Must be false for localhost without HTTPS
+            SameSite = SameSiteMode.Lax,
+            Path = "/",
             Expires = rememberMe
                 ? DateTimeOffset.UtcNow.AddDays(30)
                 : DateTimeOffset.UtcNow.AddDays(7)

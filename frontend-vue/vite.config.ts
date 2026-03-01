@@ -15,10 +15,16 @@ export default defineConfig({
     proxy: {
       '/api': {
         target: 'http://localhost:5286',
-        changeOrigin: true,
+        changeOrigin: false,  // Keep origin as localhost:8080 so cookies work
         secure: false,
-        cookieDomainRewrite: 'localhost',
-        cookiePathRewrite: '/',
+        configure: (proxy) => {
+          proxy.on('proxyReq', (proxyReq, req) => {
+            // Forward cookies from browser to backend
+            if (req.headers.cookie) {
+              proxyReq.setHeader('Cookie', req.headers.cookie);
+            }
+          });
+        },
       },
     },
   },
