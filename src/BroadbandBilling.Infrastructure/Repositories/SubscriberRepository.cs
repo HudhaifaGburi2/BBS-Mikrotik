@@ -11,6 +11,15 @@ public class SubscriberRepository : GenericRepository<Subscriber>, ISubscriberRe
     {
     }
 
+    public override async Task<Subscriber?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        return await _dbSet
+            .Include(s => s.Subscriptions)
+                .ThenInclude(sub => sub.Plan)
+            .Include(s => s.PppoeAccounts)
+            .FirstOrDefaultAsync(s => s.Id == id, cancellationToken);
+    }
+
     public async Task<Subscriber?> GetByEmailAsync(string email, CancellationToken cancellationToken = default)
     {
         return await _dbSet.FirstOrDefaultAsync(s => s.Email == email, cancellationToken);
@@ -44,6 +53,7 @@ public class SubscriberRepository : GenericRepository<Subscriber>, ISubscriberRe
     {
         var query = _dbSet
             .Include(s => s.Subscriptions)
+                .ThenInclude(sub => sub.Plan)
             .Include(s => s.PppoeAccounts)
             .AsQueryable();
 

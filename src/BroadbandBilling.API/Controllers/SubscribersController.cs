@@ -41,7 +41,7 @@ public class SubscribersController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error retrieving subscribers");
-            return StatusCode(500, new { error = "حدث خطأ أثناء جلب المشتركين" });
+            return StatusCode(500, new { error = "حدث خطأ أثناء جلب المشتركين", details = ex.Message });
         }
     }
 
@@ -113,7 +113,7 @@ public class SubscribersController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error creating subscriber");
-            return StatusCode(500, new { error = "حدث خطأ أثناء إنشاء المشترك" });
+            return StatusCode(500, new { error = "حدث خطأ أثناء إنشاء المشترك", details = ex.Message });
         }
     }
 
