@@ -24,7 +24,6 @@ public class MikroTikController : ControllerBase
     /// Test connection to MikroTik router with provided credentials
     /// </summary>
     [HttpPost("test-connection")]
-    [AllowAnonymous]
     public async Task<ActionResult<MikroTikResult>> TestConnection(
         [FromBody] MikroTikConnectionRequest request, CancellationToken cancellationToken)
     {

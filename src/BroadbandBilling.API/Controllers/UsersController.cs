@@ -9,7 +9,7 @@ namespace BroadbandBilling.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]
+[Authorize(Roles = "SuperAdmin,Manager")]
 public class UsersController : ControllerBase
 {
     private readonly IApplicationDbContext _context;
