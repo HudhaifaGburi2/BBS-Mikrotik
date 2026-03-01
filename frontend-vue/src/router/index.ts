@@ -81,37 +81,29 @@ router.beforeEach(async (to) => {
   // Ensure auth store is initialized from localStorage
   auth.initFromStorage()
 
-  console.log('[Router] Navigating to:', to.path, 'isAuthenticated:', auth.isAuthenticated)
-
   // If route requires auth
   if (to.meta.requiresAuth) {
     // Check if user is authenticated (from localStorage)
     if (!auth.isAuthenticated) {
-      console.log('[Router] Not authenticated, trying checkSession...')
       // No persisted state, try to restore session from API
       const restored = await auth.checkSession()
       if (!restored) {
-        console.log('[Router] checkSession failed, redirecting to login')
         return { name: 'login', query: { redirect: to.fullPath } }
       }
     }
-    console.log('[Router] User authenticated:', auth.userType)
   }
 
   // If route is guest-only and user is authenticated
   if (to.meta.guest && auth.isAuthenticated) {
-    console.log('[Router] Guest route but user authenticated, redirecting to dashboard')
     return auth.isAdmin ? '/admin/dashboard' : '/client/dashboard'
   }
 
   // Role-based access control
   if (to.meta.role) {
     if (to.meta.role === 'Admin' && !auth.isAdmin) {
-      console.log('[Router] Admin route but user is not admin')
       return '/client/dashboard'
     }
     if (to.meta.role === 'Subscriber' && !auth.isSubscriber) {
-      console.log('[Router] Subscriber route but user is not subscriber')
       return '/admin/dashboard'
     }
   }

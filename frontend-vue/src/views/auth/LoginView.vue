@@ -45,7 +45,7 @@ async function handleLogin() {
           <rect width="64" height="64" rx="14" fill="#E8A945"/>
           <text x="32" y="46" text-anchor="middle" font-family="Arial, sans-serif" font-weight="bold" font-size="40" fill="#2A4B7C">D</text>
         </svg>
-        <h1 class="text-3xl font-bold text-coastal-blue">DOSHI</h1>
+        <h1 class="text-3xl font-bold text-coastal-blue">Dushi</h1>
         <p class="text-light-gray mt-2">تسجيل الدخول إلى حسابك</p>
       </div>
 

@@ -58,6 +58,7 @@ public class GetSubscribersQueryHandler : IRequestHandler<GetSubscribersQuery, P
 
     private static SubscriberDto MapToDto(Subscriber subscriber)
     {
+        var now = DateTime.UtcNow;
         return new SubscriberDto(
             subscriber.Id,
             subscriber.FullName,
@@ -86,7 +87,7 @@ public class GetSubscribersQueryHandler : IRequestHandler<GetSubscribersQuery, P
                 p.IsSyncedWithMikroTik,
                 p.LastSyncDate,
                 p.ValidationStatus,
-                p.IsOnline(),
+                p.LastConnectedAt.HasValue && p.LastConnectedAt.Value > now.AddMinutes(-5),
                 p.LastConnectedAt
             )).ToList()
         );
@@ -121,6 +122,7 @@ public class GetSubscriberByIdQueryHandler : IRequestHandler<GetSubscriberByIdQu
 
     private static SubscriberDto MapToDto(Subscriber subscriber)
     {
+        var now = DateTime.UtcNow;
         return new SubscriberDto(
             subscriber.Id,
             subscriber.FullName,
@@ -149,7 +151,7 @@ public class GetSubscriberByIdQueryHandler : IRequestHandler<GetSubscriberByIdQu
                 p.IsSyncedWithMikroTik,
                 p.LastSyncDate,
                 p.ValidationStatus,
-                p.IsOnline(),
+                p.LastConnectedAt.HasValue && p.LastConnectedAt.Value > now.AddMinutes(-5),
                 p.LastConnectedAt
             )).ToList()
         );

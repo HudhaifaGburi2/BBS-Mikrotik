@@ -80,24 +80,10 @@ builder.Services.AddAuthentication(options =>
     {
         OnMessageReceived = context =>
         {
-            // Debug: Log all cookies received
-            var cookieNames = context.Request.Cookies.Keys.ToList();
-            Console.WriteLine($"[JWT] Request to {context.Request.Path} - Cookies: {string.Join(", ", cookieNames)}");
-            
-            if (context.Request.Cookies.TryGetValue("doshi_access_token", out var token))
+            if (context.Request.Cookies.TryGetValue("Dushi_access_token", out var token))
             {
-                Console.WriteLine($"[JWT] Access token found, length: {token?.Length ?? 0}");
                 context.Token = token;
             }
-            else
-            {
-                Console.WriteLine("[JWT] No access token cookie found");
-            }
-            return Task.CompletedTask;
-        },
-        OnAuthenticationFailed = context =>
-        {
-            Console.WriteLine($"[JWT] Authentication failed: {context.Exception.Message}");
             return Task.CompletedTask;
         }
     };

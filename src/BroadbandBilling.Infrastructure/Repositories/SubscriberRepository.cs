@@ -63,13 +63,19 @@ public class SubscriberRepository : GenericRepository<Subscriber>, ISubscriberRe
 
         if (hasActiveSubscription.HasValue)
         {
+            // Use inline expression instead of method call for EF Core translation
+            var now = DateTime.UtcNow;
             if (hasActiveSubscription.Value)
             {
-                query = query.Where(s => s.Subscriptions.Any(sub => sub.IsActive()));
+                query = query.Where(s => s.Subscriptions.Any(sub => 
+                    sub.Status == Domain.Enums.SubscriptionStatus.Active && 
+                    sub.BillingPeriod.EndDate >= now));
             }
             else
             {
-                query = query.Where(s => !s.Subscriptions.Any(sub => sub.IsActive()));
+                query = query.Where(s => !s.Subscriptions.Any(sub => 
+                    sub.Status == Domain.Enums.SubscriptionStatus.Active && 
+                    sub.BillingPeriod.EndDate >= now));
             }
         }
 

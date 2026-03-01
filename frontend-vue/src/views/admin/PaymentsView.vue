@@ -96,12 +96,12 @@ async function recordPayment() {
 }
 
 function saveGatewayConfig() {
-  localStorage.setItem('doshi_payment_gateways', JSON.stringify(gateways.value))
+  localStorage.setItem('Dushi_payment_gateways', JSON.stringify(gateways.value))
   toast.success('تم حفظ إعدادات بوابات الدفع')
 }
 
 function loadGatewayConfig() {
-  const saved = localStorage.getItem('doshi_payment_gateways')
+  const saved = localStorage.getItem('Dushi_payment_gateways')
   if (saved) {
     try {
       gateways.value = JSON.parse(saved)

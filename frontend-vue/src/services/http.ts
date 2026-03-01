@@ -48,7 +48,6 @@ http.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry) {
       // Don't retry auth endpoints - let the router guard handle auth flow
       if (originalRequest.url?.includes('/auth/')) {
-        console.log('[HTTP] 401 on auth endpoint, not retrying:', originalRequest.url)
         return Promise.reject(error)
       }
 
@@ -61,16 +60,12 @@ http.interceptors.response.use(
       originalRequest._retry = true
       isRefreshing = true
 
-      console.log('[HTTP] 401 received, attempting token refresh...')
-
       try {
         // Send empty request - refresh token is in HttpOnly cookie
         await http.post('/auth/refresh-token', {})
-        console.log('[HTTP] Token refresh successful')
         processQueue(null)
         return http(originalRequest)
       } catch (refreshError) {
-        console.log('[HTTP] Token refresh failed')
         processQueue(refreshError)
         // Clear auth state without page reload
         const { useAuthStore } = await import('@/stores/auth')

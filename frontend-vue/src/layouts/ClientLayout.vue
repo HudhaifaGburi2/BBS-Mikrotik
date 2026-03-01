@@ -30,7 +30,7 @@ async function handleLogout() {
               <rect width="64" height="64" rx="14" fill="#E8A945"/>
               <text x="32" y="46" text-anchor="middle" font-family="Arial, sans-serif" font-weight="bold" font-size="40" fill="#2A4B7C">D</text>
             </svg>
-            <h1 class="text-lg font-bold text-golden-sand">DOSHI</h1>
+            <h1 class="text-lg font-bold text-golden-sand">Dushi</h1>
           </div>
           <nav class="hidden md:flex items-center gap-6">
             <RouterLink

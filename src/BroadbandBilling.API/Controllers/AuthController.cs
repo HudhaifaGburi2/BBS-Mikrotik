@@ -14,8 +14,8 @@ public class AuthController : ControllerBase
     private readonly IMediator _mediator;
     private readonly IConfiguration _configuration;
 
-    private const string AccessTokenCookie = "doshi_access_token";
-    private const string RefreshTokenCookie = "doshi_refresh_token";
+    private const string AccessTokenCookie = "Dushi_access_token";
+    private const string RefreshTokenCookie = "Dushi_refresh_token";
 
     public AuthController(IMediator mediator, IConfiguration configuration)
     {
@@ -27,8 +27,6 @@ public class AuthController : ControllerBase
     [AllowAnonymous]
     public async Task<ActionResult> AdminLogin([FromBody] LoginRequest request)
     {
-        Console.WriteLine($"[AdminLogin] Login attempt for user: {request.Username}");
-        
         var command = new AdminLoginCommand
         {
             Username = request.Username,
@@ -41,10 +39,7 @@ public class AuthController : ControllerBase
         };
 
         var response = await _mediator.Send(command);
-        Console.WriteLine($"[AdminLogin] Login successful for: {response.FullName}, Role: {response.Role}");
-        Console.WriteLine($"[AdminLogin] Setting cookies - AccessToken length: {response.AccessToken?.Length ?? 0}, RefreshToken length: {response.RefreshToken?.Length ?? 0}");
-        
-        SetAuthCookies(response.AccessToken, response.RefreshToken, response.ExpiresIn, request.RememberMe);
+        SetAuthCookies(response.AccessToken!, response.RefreshToken!, response.ExpiresIn, request.RememberMe);
 
         return Ok(new
         {
@@ -120,16 +115,10 @@ public class AuthController : ControllerBase
     [Consumes("application/json", "application/x-www-form-urlencoded", "text/plain")]
     public async Task<ActionResult> RefreshToken()
     {
-        // Log all cookies for debugging
-        var allCookies = Request.Cookies.Keys.ToList();
-        Console.WriteLine($"[RefreshToken] Cookies received: {string.Join(", ", allCookies)}");
-        
         var refreshToken = Request.Cookies[RefreshTokenCookie];
-        Console.WriteLine($"[RefreshToken] Refresh token cookie present: {!string.IsNullOrEmpty(refreshToken)}");
         
         if (string.IsNullOrEmpty(refreshToken))
         {
-            // Return 400 Bad Request instead of 401 to prevent infinite refresh loop
             return BadRequest(new { message = "لا يوجد رمز تحديث", error = "No refresh token cookie" });
         }
 
@@ -142,7 +131,7 @@ public class AuthController : ControllerBase
             };
 
             var response = await _mediator.Send(command);
-            SetAuthCookies(response.AccessToken, response.RefreshToken, response.ExpiresIn, false);
+            SetAuthCookies(response.AccessToken!, response.RefreshToken!, response.ExpiresIn, false);
 
             return Ok(new
             {
@@ -152,10 +141,9 @@ public class AuthController : ControllerBase
                 hasActiveSubscription = response.HasActiveSubscription
             });
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"[RefreshToken] Error: {ex.Message}");
-            return BadRequest(new { message = "فشل تحديث الرمز", error = ex.Message });
+            return BadRequest(new { message = "فشل تحديث الرمز" });
         }
     }
 
@@ -184,13 +172,8 @@ public class AuthController : ControllerBase
                 : DateTimeOffset.UtcNow.AddDays(7),
         };
 
-        Console.WriteLine($"[SetAuthCookies] Setting access token cookie, expires in {expiresInSeconds}s");
-        Console.WriteLine($"[SetAuthCookies] Setting refresh token cookie, expires in {(rememberMe ? 30 : 7)} days");
-        
         Response.Cookies.Append(AccessTokenCookie, accessToken, accessCookieOptions);
         Response.Cookies.Append(RefreshTokenCookie, refreshToken, refreshCookieOptions);
-        
-        Console.WriteLine($"[SetAuthCookies] Cookies appended to response");
     }
 
     private void ClearAuthCookies()

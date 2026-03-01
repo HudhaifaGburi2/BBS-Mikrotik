@@ -1,6 +1,6 @@
-# DOSHI - دليل النشر على IIS (Windows)
+# Dushi - دليل النشر على IIS (Windows)
 
-> نشر نظام DOSHI لإدارة فواتير الإنترنت على خادم IIS في Windows مع إتاحته عبر الإنترنت.
+> نشر نظام Dushi لإدارة فواتير الإنترنت على خادم IIS في Windows مع إتاحته عبر الإنترنت.
 
 ---
 
@@ -127,12 +127,12 @@ dotnet ef database update --project src/BroadbandBilling.Infrastructure/Broadban
 cd C:\path\to\BBS-Mikrotik
 
 # بناء ونشر API
-dotnet publish src/BroadbandBilling.API/BroadbandBilling.API.csproj -c Release -o C:\inetpub\doshi\api --runtime win-x64 --self-contained false
+dotnet publish src/BroadbandBilling.API/BroadbandBilling.API.csproj -c Release -o C:\inetpub\Dushi\api --runtime win-x64 --self-contained false
 ```
 
 ### 3.2 إعداد appsettings.Production.json
 
-أنشئ ملف `C:\inetpub\doshi\api\appsettings.Production.json`:
+أنشئ ملف `C:\inetpub\Dushi\api\appsettings.Production.json`:
 
 ```json
 {
@@ -171,7 +171,7 @@ dotnet publish src/BroadbandBilling.API/BroadbandBilling.API.csproj -c Release -
       {
         "Name": "File",
         "Args": {
-          "path": "C:\\inetpub\\doshi\\logs\\api-log-.txt",
+          "path": "C:\\inetpub\\Dushi\\logs\\api-log-.txt",
           "rollingInterval": "Day",
           "retainedFileCountLimit": 30
         }
@@ -185,7 +185,7 @@ dotnet publish src/BroadbandBilling.API/BroadbandBilling.API.csproj -c Release -
 
 ### 3.3 إنشاء web.config للـ API
 
-أنشئ ملف `C:\inetpub\doshi\api\web.config`:
+أنشئ ملف `C:\inetpub\Dushi\api\web.config`:
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
@@ -212,8 +212,8 @@ dotnet publish src/BroadbandBilling.API/BroadbandBilling.API.csproj -c Release -
 ### 3.4 إنشاء مجلد السجلات
 
 ```powershell
-mkdir C:\inetpub\doshi\api\logs
-mkdir C:\inetpub\doshi\logs
+mkdir C:\inetpub\Dushi\api\logs
+mkdir C:\inetpub\Dushi\logs
 ```
 
 ---
@@ -226,7 +226,7 @@ mkdir C:\inetpub\doshi\logs
 
 ```env
 VITE_API_BASE_URL=/api
-VITE_APP_TITLE=DOSHI
+VITE_APP_TITLE=Dushi
 ```
 
 ### 4.2 بناء Frontend
@@ -242,12 +242,12 @@ npm run build
 
 ```powershell
 # نسخ مجلد dist إلى مجلد IIS
-xcopy /E /I /Y dist C:\inetpub\doshi\www
+xcopy /E /I /Y dist C:\inetpub\Dushi\www
 ```
 
 ### 4.4 إنشاء web.config للـ Frontend
 
-أنشئ ملف `C:\inetpub\doshi\www\web.config`:
+أنشئ ملف `C:\inetpub\Dushi\www\web.config`:
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
@@ -336,20 +336,20 @@ winget install Microsoft.IIS.ApplicationRequestRouting
 Import-Module WebAdministration
 
 # إنشاء Application Pool للـ API
-New-WebAppPool -Name "DoshiAPI"
-Set-ItemProperty "IIS:\AppPools\DoshiAPI" -Name "managedRuntimeVersion" -Value ""
-Set-ItemProperty "IIS:\AppPools\DoshiAPI" -Name "startMode" -Value "AlwaysRunning"
+New-WebAppPool -Name "DushiAPI"
+Set-ItemProperty "IIS:\AppPools\DushiAPI" -Name "managedRuntimeVersion" -Value ""
+Set-ItemProperty "IIS:\AppPools\DushiAPI" -Name "startMode" -Value "AlwaysRunning"
 
 # إنشاء Application Pool للـ Frontend
-New-WebAppPool -Name "DoshiFrontend"
-Set-ItemProperty "IIS:\AppPools\DoshiFrontend" -Name "managedRuntimeVersion" -Value ""
+New-WebAppPool -Name "DushiFrontend"
+Set-ItemProperty "IIS:\AppPools\DushiFrontend" -Name "managedRuntimeVersion" -Value ""
 ```
 
 ### 7.2 إنشاء موقع API (Backend)
 
 ```powershell
 # إنشاء موقع API على بورت 5000 (داخلي فقط)
-New-Website -Name "DoshiAPI" -PhysicalPath "C:\inetpub\doshi\api" -Port 5000 -ApplicationPool "DoshiAPI"
+New-Website -Name "DushiAPI" -PhysicalPath "C:\inetpub\Dushi\api" -Port 5000 -ApplicationPool "DushiAPI"
 ```
 
 ### 7.3 إنشاء موقع Frontend (الرئيسي)
@@ -359,15 +359,15 @@ New-Website -Name "DoshiAPI" -PhysicalPath "C:\inetpub\doshi\api" -Port 5000 -Ap
 # أولاً أوقف Default Web Site:
 Stop-Website -Name "Default Web Site"
 
-New-Website -Name "DoshiFrontend" -PhysicalPath "C:\inetpub\doshi\www" -Port 80 -ApplicationPool "DoshiFrontend"
+New-Website -Name "DushiFrontend" -PhysicalPath "C:\inetpub\Dushi\www" -Port 80 -ApplicationPool "DushiFrontend"
 ```
 
 ### 7.4 تحقق من عمل المواقع
 
 ```powershell
 # تشغيل المواقع
-Start-Website -Name "DoshiAPI"
-Start-Website -Name "DoshiFrontend"
+Start-Website -Name "DushiAPI"
+Start-Website -Name "DushiFrontend"
 
 # تحقق
 Get-Website | Format-Table Name, State, PhysicalPath
@@ -379,16 +379,16 @@ Get-Website | Format-Table Name, State, PhysicalPath
 
 ```powershell
 # منح صلاحيات لـ IIS App Pool على مجلدات التطبيق
-$acl = Get-Acl "C:\inetpub\doshi"
+$acl = Get-Acl "C:\inetpub\Dushi"
 $rule = New-Object System.Security.AccessControl.FileSystemAccessRule("IIS_IUSRS", "FullControl", "ContainerInherit,ObjectInherit", "None", "Allow")
 $acl.SetAccessRule($rule)
-Set-Acl "C:\inetpub\doshi" $acl
+Set-Acl "C:\inetpub\Dushi" $acl
 
 # صلاحيات لمجلد السجلات
-$acl2 = Get-Acl "C:\inetpub\doshi\logs"
+$acl2 = Get-Acl "C:\inetpub\Dushi\logs"
 $rule2 = New-Object System.Security.AccessControl.FileSystemAccessRule("IIS_IUSRS", "FullControl", "ContainerInherit,ObjectInherit", "None", "Allow")
 $acl2.SetAccessRule($rule2)
-Set-Acl "C:\inetpub\doshi\logs" $acl2
+Set-Acl "C:\inetpub\Dushi\logs" $acl2
 ```
 
 ---
@@ -415,8 +415,8 @@ Set-Acl "C:\inetpub\doshi\logs" $acl2
 
 ```powershell
 # PowerShell كمسؤول - فتح بورت 80 و 443
-New-NetFirewallRule -DisplayName "DOSHI HTTP" -Direction Inbound -Protocol TCP -LocalPort 80 -Action Allow
-New-NetFirewallRule -DisplayName "DOSHI HTTPS" -Direction Inbound -Protocol TCP -LocalPort 443 -Action Allow
+New-NetFirewallRule -DisplayName "Dushi HTTP" -Direction Inbound -Protocol TCP -LocalPort 80 -Action Allow
+New-NetFirewallRule -DisplayName "Dushi HTTPS" -Direction Inbound -Protocol TCP -LocalPort 443 -Action Allow
 ```
 
 ### 10.2 إعداد Port Forwarding في الراوتر
@@ -442,7 +442,7 @@ Invoke-RestMethod -Uri "https://api.ipify.org"
 إذا لديك دومين:
 1. اذهب إلى لوحة تحكم الدومين (Namecheap, GoDaddy, Cloudflare...)
 2. أضف سجل **A Record**:
-   - **Name**: `@` أو `doshi`
+   - **Name**: `@` أو `Dushi`
    - **Value**: عنوان IP العام الخاص بك
    - **TTL**: 3600
 
@@ -472,7 +472,7 @@ wacs.exe
 # اتبع الخطوات:
 # 1. اختر N (Create new certificate)
 # 2. اختر 1 (Single binding of an IIS site)
-# 3. اختر موقع DoshiFrontend
+# 3. اختر موقع DushiFrontend
 # 4. اتبع التعليمات لإثبات ملكية الدومين
 ```
 
@@ -484,7 +484,7 @@ New-SelfSignedCertificate -DnsName "YOUR_IP_OR_HOSTNAME" -CertStoreLocation "cer
 
 # ربط الشهادة بالموقع في IIS Manager:
 # 1. افتح IIS Manager
-# 2. اختر DoshiFrontend
+# 2. اختر DushiFrontend
 # 3. Bindings → Add
 # 4. Type: https, Port: 443
 # 5. اختر الشهادة من القائمة
@@ -525,16 +525,16 @@ cd C:\path\to\BBS-Mikrotik
 git pull origin main
 
 # إيقاف الموقع
-Stop-Website -Name "DoshiAPI"
+Stop-Website -Name "DushiAPI"
 
 # إعادة النشر
-dotnet publish src/BroadbandBilling.API/BroadbandBilling.API.csproj -c Release -o C:\inetpub\doshi\api --runtime win-x64 --self-contained false
+dotnet publish src/BroadbandBilling.API/BroadbandBilling.API.csproj -c Release -o C:\inetpub\Dushi\api --runtime win-x64 --self-contained false
 
 # تطبيق migrations جديدة
 dotnet ef database update --project src/BroadbandBilling.Infrastructure/BroadbandBilling.Infrastructure.csproj --startup-project src/BroadbandBilling.API/BroadbandBilling.API.csproj
 
 # تشغيل الموقع
-Start-Website -Name "DoshiAPI"
+Start-Website -Name "DushiAPI"
 ```
 
 ### تحديث Frontend
@@ -547,7 +547,7 @@ npm install
 npm run build
 
 # نسخ الملفات الجديدة
-xcopy /E /I /Y dist C:\inetpub\doshi\www
+xcopy /E /I /Y dist C:\inetpub\Dushi\www
 ```
 
 ---
@@ -555,7 +555,7 @@ xcopy /E /I /Y dist C:\inetpub\doshi\www
 ## هيكل المجلدات النهائي
 
 ```
-C:\inetpub\doshi\
+C:\inetpub\Dushi\
 ├── api\                          ← Backend (.NET API)
 │   ├── BroadbandBilling.API.dll
 │   ├── appsettings.json
@@ -578,10 +578,10 @@ C:\inetpub\doshi\
 
 ```powershell
 # تحقق من سجلات stdout:
-Get-Content C:\inetpub\doshi\api\logs\stdout* -Tail 50
+Get-Content C:\inetpub\Dushi\api\logs\stdout* -Tail 50
 
 # تحقق من سجلات التطبيق:
-Get-Content C:\inetpub\doshi\logs\api-log-*.txt -Tail 50
+Get-Content C:\inetpub\Dushi\logs\api-log-*.txt -Tail 50
 
 # تحقق من Event Viewer:
 Get-EventLog -LogName Application -Newest 20 | Where-Object { $_.Source -like "*IIS*" -or $_.Source -like "*ASP.NET*" }
@@ -615,7 +615,7 @@ sqlcmd -S localhost -U sa -P "YOUR_PASSWORD" -Q "SELECT 1"
 ### الموقع لا يظهر من الخارج
 
 1. تحقق من Port Forwarding في الراوتر
-2. تحقق من جدار الحماية: `Get-NetFirewallRule | Where-Object { $_.DisplayName -like "*DOSHI*" }`
+2. تحقق من جدار الحماية: `Get-NetFirewallRule | Where-Object { $_.DisplayName -like "*Dushi*" }`
 3. اختبر من https://www.yougetsignal.com/tools/open-ports/ (بورت 80)
 
 ---
@@ -635,22 +635,22 @@ sqlcmd -S localhost -U sa -P "YOUR_PASSWORD" -Q "SELECT 1"
 cd C:\path\to\BBS-Mikrotik
 
 # Backend
-dotnet publish src/BroadbandBilling.API/BroadbandBilling.API.csproj -c Release -o C:\inetpub\doshi\api --runtime win-x64 --self-contained false
+dotnet publish src/BroadbandBilling.API/BroadbandBilling.API.csproj -c Release -o C:\inetpub\Dushi\api --runtime win-x64 --self-contained false
 
 # Frontend
 cd frontend-vue
 npm install
 npm run build
-xcopy /E /I /Y dist C:\inetpub\doshi\www
+xcopy /E /I /Y dist C:\inetpub\Dushi\www
 
 # Database
 dotnet ef database update --project src/BroadbandBilling.Infrastructure/BroadbandBilling.Infrastructure.csproj --startup-project src/BroadbandBilling.API/BroadbandBilling.API.csproj
 
 # === إدارة IIS ===
 iisreset                          # إعادة تشغيل IIS
-Start-Website -Name "DoshiAPI"    # تشغيل API
-Stop-Website -Name "DoshiAPI"     # إيقاف API
-Start-Website -Name "DoshiFrontend"  # تشغيل Frontend
+Start-Website -Name "DushiAPI"    # تشغيل API
+Stop-Website -Name "DushiAPI"     # إيقاف API
+Start-Website -Name "DushiFrontend"  # تشغيل Frontend
 Get-Website                       # عرض حالة المواقع
 ```
 

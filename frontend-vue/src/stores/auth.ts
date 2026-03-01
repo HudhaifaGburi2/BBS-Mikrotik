@@ -3,7 +3,7 @@ import { ref, computed } from 'vue'
 import http from '@/services/http'
 import type { UserData, UserType } from '@/types'
 
-const AUTH_STORAGE_KEY = 'doshi_auth_user'
+const AUTH_STORAGE_KEY = 'Dushi_auth_user'
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<UserData | null>(null)
@@ -25,11 +25,9 @@ export const useAuthStore = defineStore('auth', () => {
         const parsed = JSON.parse(stored)
         if (parsed && parsed.userType) {
           user.value = parsed
-          console.log('[Auth] Restored user from storage:', parsed.userType)
         }
       }
-    } catch (e) {
-      console.error('[Auth] Failed to restore from storage:', e)
+    } catch {
       localStorage.removeItem(AUTH_STORAGE_KEY)
     }
     initialized.value = true
@@ -43,16 +41,14 @@ export const useAuthStore = defineStore('auth', () => {
     // Persist to localStorage
     try {
       localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(data))
-      console.log('[Auth] User saved to storage:', data.userType)
-    } catch (e) {
-      console.error('[Auth] Failed to save to storage:', e)
+    } catch {
+      // Ignore storage errors
     }
   }
 
   function clearUser() {
     user.value = null
     localStorage.removeItem(AUTH_STORAGE_KEY)
-    console.log('[Auth] User cleared from storage')
   }
 
   async function login(username: string, password: string, rememberMe = false): Promise<UserType> {
@@ -106,24 +102,17 @@ export const useAuthStore = defineStore('auth', () => {
     // If we already have user data from localStorage, trust it
     // The JWT cookie will be validated by the backend on actual API calls
     if (user.value !== null) {
-      console.log('[Auth] checkSession: User exists in store, returning true')
       return true
     }
-
-    // Try to restore from API only if no persisted state
-    console.log('[Auth] checkSession: No user in store, calling /auth/me')
     try {
       isLoading.value = true
       const res = await http.get<UserData>('/auth/me')
       if (res.data) {
         setUser(res.data)
-        console.log('[Auth] checkSession: Got user from API:', res.data.userType)
         return true
       }
-      console.log('[Auth] checkSession: No data from API')
       return false
     } catch (err: any) {
-      console.log('[Auth] checkSession: API error:', err.response?.status || err.message)
       // Only clear if it's a 401 - other errors might be temporary
       if (err.response?.status === 401) {
         clearUser()

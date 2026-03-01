@@ -99,7 +99,7 @@ onMounted(() => plansStore.fetchPlans(true))
         <div class="space-y-2 text-sm">
           <div class="flex justify-between"><span class="text-light-gray">اسم البنك:</span><span class="font-medium text-charcoal">بنك الراجحي</span></div>
           <div class="flex justify-between"><span class="text-light-gray">رقم الحساب:</span><span class="font-medium text-charcoal font-mono">SA0000000000000000000000</span></div>
-          <div class="flex justify-between"><span class="text-light-gray">اسم المستفيد:</span><span class="font-medium text-charcoal">شركة DOSHI للاتصالات</span></div>
+          <div class="flex justify-between"><span class="text-light-gray">اسم المستفيد:</span><span class="font-medium text-charcoal">شركة Dushi للاتصالات</span></div>
           <div class="flex justify-between"><span class="text-light-gray">المبلغ المطلوب:</span><span class="font-bold text-jazan-green">{{ formatCurrency(selectedPlan.price) }}</span></div>
         </div>
         <div class="mt-3 bg-warning-yellow/10 border border-warning-yellow/30 rounded-lg p-3">

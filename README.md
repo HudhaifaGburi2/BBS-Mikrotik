@@ -1,4 +1,4 @@
-# DOSHI - نظام إدارة فواتير الإنترنت مع MikroTik
+# Dushi - نظام إدارة فواتير الإنترنت مع MikroTik
 
 نظام متكامل لإدارة اشتراكات الإنترنت والفوترة مع تكامل MikroTik PPPoE.
 
@@ -230,7 +230,7 @@ server {
 
     # Frontend - ملفات Vue المبنية
     location / {
-        root /var/www/doshi/frontend;
+        root /var/www/Dushi/frontend;
         try_files $uri $uri/ /index.html;
     }
 
@@ -252,20 +252,20 @@ server {
 ### 4.4 إعداد خدمة systemd للـ Backend
 
 ```bash
-sudo nano /etc/systemd/system/doshi-api.service
+sudo nano /etc/systemd/system/Dushi-api.service
 ```
 
 ```ini
 [Unit]
-Description=DOSHI API
+Description=Dushi API
 After=network.target
 
 [Service]
-WorkingDirectory=/var/www/doshi/api
+WorkingDirectory=/var/www/Dushi/api
 ExecStart=/usr/bin/dotnet BroadbandBilling.API.dll
 Restart=always
 RestartSec=10
-SyslogIdentifier=doshi-api
+SyslogIdentifier=Dushi-api
 User=www-data
 Environment=ASPNETCORE_ENVIRONMENT=Production
 Environment=ASPNETCORE_URLS=http://localhost:5286
@@ -275,24 +275,24 @@ WantedBy=multi-user.target
 ```
 
 ```bash
-sudo systemctl enable doshi-api
-sudo systemctl start doshi-api
-sudo systemctl status doshi-api
+sudo systemctl enable Dushi-api
+sudo systemctl start Dushi-api
+sudo systemctl status Dushi-api
 ```
 
 ### 4.5 نسخ الملفات
 
 ```bash
 # Backend
-sudo mkdir -p /var/www/doshi/api
-sudo cp -r ./publish/api/* /var/www/doshi/api/
+sudo mkdir -p /var/www/Dushi/api
+sudo cp -r ./publish/api/* /var/www/Dushi/api/
 
 # Frontend
-sudo mkdir -p /var/www/doshi/frontend
-sudo cp -r ./frontend-vue/dist/* /var/www/doshi/frontend/
+sudo mkdir -p /var/www/Dushi/frontend
+sudo cp -r ./frontend-vue/dist/* /var/www/Dushi/frontend/
 
 # صلاحيات
-sudo chown -R www-data:www-data /var/www/doshi
+sudo chown -R www-data:www-data /var/www/Dushi
 ```
 
 ---
