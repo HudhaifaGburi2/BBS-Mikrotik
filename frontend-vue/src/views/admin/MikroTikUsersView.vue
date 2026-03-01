@@ -3,8 +3,6 @@ import { ref } from 'vue'
 import { apiPost } from '@/services/http'
 import { useToastStore } from '@/stores/toast'
 import AppLoader from '@/components/AppLoader.vue'
-import type { MikroTikConnectionRequest } from '@/types'
-
 interface PppUser {
   name: string
   password: string
@@ -21,24 +19,14 @@ const showAddForm = ref(false)
 const hasLoaded = ref(false)
 const errorMessage = ref('')
 
-const connection = ref<MikroTikConnectionRequest>({
-  host: '192.168.88.1',
-  port: 8728,
-  username: 'admin',
-  password: '',
-})
-
 const newUser = ref({ name: '', password: '', profile: 'default', service: 'pppoe' })
 
 async function loadUsers() {
-  if (!connection.value.password) {
-    toast.error('الرجاء إدخال كلمة مرور MikroTik')
-    return
-  }
   isLoading.value = true
   errorMessage.value = ''
   try {
-    const res = await apiPost<{ success: boolean; data: PppUser[]; message: string }>('/mikrotik/ppp-users', connection.value)
+    // Backend uses credentials from appsettings.json
+    const res = await apiPost<{ success: boolean; data: PppUser[]; message: string }>('/mikrotik/ppp-users', {})
     hasLoaded.value = true
     if (res.data?.success && res.data.data) {
       users.value = res.data.data
@@ -46,21 +34,22 @@ async function loadUsers() {
       users.value = []
       errorMessage.value = res.data?.message || 'لا توجد بيانات'
     }
-  } catch {
+  } catch (err: any) {
     hasLoaded.value = true
     users.value = []
-    errorMessage.value = 'فشل الاتصال بجهاز MikroTik - تأكد من بيانات الاتصال'
+    errorMessage.value = err.response?.data?.message || 'فشل الاتصال بجهاز MikroTik - تحقق من إعدادات الخادم'
   } finally {
     isLoading.value = false
   }
 }
 
 async function addUser() {
+  if (!newUser.value.name || !newUser.value.password) {
+    toast.error('الرجاء إدخال اسم المستخدم وكلمة المرور')
+    return
+  }
   try {
-    const res = await apiPost<{ success: boolean; message: string }>('/mikrotik/ppp-users/add', {
-      ...connection.value,
-      ...newUser.value,
-    })
+    const res = await apiPost<{ success: boolean; message: string }>('/mikrotik/ppp-users/add', newUser.value)
     if (res.data?.success) {
       toast.success('تم إضافة المستخدم بنجاح')
       showAddForm.value = false
@@ -69,44 +58,38 @@ async function addUser() {
     } else {
       toast.error(res.data?.message || 'فشل إضافة المستخدم')
     }
-  } catch {
-    toast.error('فشل إضافة المستخدم')
+  } catch (err: any) {
+    toast.error(err.response?.data?.message || 'فشل إضافة المستخدم')
   }
 }
 
 async function deleteUser(username: string) {
   if (!confirm(`هل أنت متأكد من حذف المستخدم ${username}؟`)) return
   try {
-    const res = await apiPost<{ success: boolean; message: string }>('/mikrotik/ppp-users/delete', {
-      ...connection.value,
-      username,
-    })
+    const res = await apiPost<{ success: boolean; message: string }>('/mikrotik/ppp-users/delete', { username })
     if (res.data?.success) {
       toast.success('تم حذف المستخدم')
       loadUsers()
     } else {
       toast.error(res.data?.message || 'فشل حذف المستخدم')
     }
-  } catch {
-    toast.error('فشل حذف المستخدم')
+  } catch (err: any) {
+    toast.error(err.response?.data?.message || 'فشل حذف المستخدم')
   }
 }
 
 async function toggleUser(username: string, disabled: boolean) {
   const endpoint = disabled ? '/mikrotik/ppp-users/activate' : '/mikrotik/ppp-users/deactivate'
   try {
-    const res = await apiPost<{ success: boolean; message: string }>(endpoint, {
-      ...connection.value,
-      username,
-    })
+    const res = await apiPost<{ success: boolean; message: string }>(endpoint, { username })
     if (res.data?.success) {
       toast.success(disabled ? 'تم تفعيل المستخدم' : 'تم تعطيل المستخدم')
       loadUsers()
     } else {
       toast.error(res.data?.message || 'فشل تغيير حالة المستخدم')
     }
-  } catch {
-    toast.error('فشل تغيير حالة المستخدم')
+  } catch (err: any) {
+    toast.error(err.response?.data?.message || 'فشل تغيير حالة المستخدم')
   }
 }
 </script>
@@ -124,17 +107,6 @@ async function toggleUser(username: string, disabled: boolean) {
         <button class="px-4 py-2 bg-coastal-blue text-white rounded-lg hover:opacity-90 text-sm" @click="loadUsers">
           {{ hasLoaded ? 'تحديث' : 'اتصال' }}
         </button>
-      </div>
-    </div>
-
-    <!-- Connection Settings -->
-    <div class="bg-white rounded-xl shadow-md p-4 mb-4 border border-soft-beige">
-      <h3 class="text-sm font-semibold text-charcoal mb-2">إعدادات الاتصال</h3>
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <input v-model="connection.host" placeholder="عنوان IP" class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-coastal-blue focus:border-transparent" />
-        <input v-model.number="connection.port" type="number" placeholder="المنفذ" class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-coastal-blue focus:border-transparent" />
-        <input v-model="connection.username" placeholder="اسم المستخدم" class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-coastal-blue focus:border-transparent" />
-        <input v-model="connection.password" type="password" placeholder="كلمة المرور" class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-coastal-blue focus:border-transparent" />
       </div>
     </div>
 

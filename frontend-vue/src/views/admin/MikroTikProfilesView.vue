@@ -3,8 +3,6 @@ import { ref } from 'vue'
 import { apiPost } from '@/services/http'
 import { useToastStore } from '@/stores/toast'
 import AppLoader from '@/components/AppLoader.vue'
-import type { MikroTikConnectionRequest } from '@/types'
-
 interface PppProfile {
   name: string
   localAddress: string
@@ -21,24 +19,14 @@ const showAddForm = ref(false)
 const hasLoaded = ref(false)
 const errorMessage = ref('')
 
-const connection = ref<MikroTikConnectionRequest>({
-  host: '192.168.88.1',
-  port: 8728,
-  username: 'admin',
-  password: '',
-})
-
 const newProfile = ref({ name: '', localAddress: '', remoteAddress: '', rateLimit: '' })
 
 async function loadProfiles() {
-  if (!connection.value.password) {
-    toast.error('الرجاء إدخال كلمة مرور MikroTik')
-    return
-  }
   isLoading.value = true
   errorMessage.value = ''
   try {
-    const res = await apiPost<{ success: boolean; data: PppProfile[]; message: string }>('/mikrotik/ppp-profiles', connection.value)
+    // Backend uses credentials from appsettings.json
+    const res = await apiPost<{ success: boolean; data: PppProfile[]; message: string }>('/mikrotik/ppp-profiles', {})
     hasLoaded.value = true
     if (res.data?.success && res.data.data) {
       profiles.value = res.data.data
@@ -46,21 +34,22 @@ async function loadProfiles() {
       profiles.value = []
       errorMessage.value = res.data?.message || 'لا توجد بيانات'
     }
-  } catch {
+  } catch (err: any) {
     hasLoaded.value = true
     profiles.value = []
-    errorMessage.value = 'فشل الاتصال بجهاز MikroTik - تأكد من بيانات الاتصال'
+    errorMessage.value = err.response?.data?.message || 'فشل الاتصال بجهاز MikroTik - تحقق من إعدادات الخادم'
   } finally {
     isLoading.value = false
   }
 }
 
 async function addProfile() {
+  if (!newProfile.value.name) {
+    toast.error('الرجاء إدخال اسم البروفايل')
+    return
+  }
   try {
-    const res = await apiPost<{ success: boolean; message: string }>('/mikrotik/ppp-profiles/add', {
-      ...connection.value,
-      ...newProfile.value,
-    })
+    const res = await apiPost<{ success: boolean; message: string }>('/mikrotik/ppp-profiles/add', newProfile.value)
     if (res.data?.success) {
       toast.success('تم إضافة البروفايل بنجاح')
       showAddForm.value = false
@@ -69,26 +58,23 @@ async function addProfile() {
     } else {
       toast.error(res.data?.message || 'فشل إضافة البروفايل')
     }
-  } catch {
-    toast.error('فشل إضافة البروفايل')
+  } catch (err: any) {
+    toast.error(err.response?.data?.message || 'فشل إضافة البروفايل')
   }
 }
 
 async function deleteProfile(name: string) {
   if (!confirm(`هل أنت متأكد من حذف البروفايل ${name}؟`)) return
   try {
-    const res = await apiPost<{ success: boolean; message: string }>('/mikrotik/ppp-profiles/delete', {
-      ...connection.value,
-      name,
-    })
+    const res = await apiPost<{ success: boolean; message: string }>('/mikrotik/ppp-profiles/delete', { name })
     if (res.data?.success) {
       toast.success('تم حذف البروفايل')
       loadProfiles()
     } else {
       toast.error(res.data?.message || 'فشل حذف البروفايل')
     }
-  } catch {
-    toast.error('فشل حذف البروفايل')
+  } catch (err: any) {
+    toast.error(err.response?.data?.message || 'فشل حذف البروفايل')
   }
 }
 </script>
@@ -106,17 +92,6 @@ async function deleteProfile(name: string) {
         <button class="px-4 py-2 bg-coastal-blue text-white rounded-lg hover:opacity-90 text-sm" @click="loadProfiles">
           {{ hasLoaded ? 'تحديث' : 'اتصال' }}
         </button>
-      </div>
-    </div>
-
-    <!-- Connection Settings -->
-    <div class="bg-white rounded-xl shadow-md p-4 mb-4 border border-soft-beige">
-      <h3 class="text-sm font-semibold text-charcoal mb-2">إعدادات الاتصال</h3>
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <input v-model="connection.host" placeholder="عنوان IP" class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-coastal-blue focus:border-transparent" />
-        <input v-model.number="connection.port" type="number" placeholder="المنفذ" class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-coastal-blue focus:border-transparent" />
-        <input v-model="connection.username" placeholder="اسم المستخدم" class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-coastal-blue focus:border-transparent" />
-        <input v-model="connection.password" type="password" placeholder="كلمة المرور" class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-coastal-blue focus:border-transparent" />
       </div>
     </div>
 

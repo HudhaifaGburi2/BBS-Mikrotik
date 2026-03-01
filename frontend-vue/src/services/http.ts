@@ -46,17 +46,18 @@ http.interceptors.response.use(
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean }
 
     if (error.response?.status === 401 && !originalRequest._retry) {
-      // Don't retry refresh or login endpoints
+      // Don't retry refresh, login, or logout endpoints
       if (originalRequest.url?.includes('/auth/refresh-token') ||
           originalRequest.url?.includes('/auth/me') ||
-          originalRequest.url?.includes('/login')) {
+          originalRequest.url?.includes('/login') ||
+          originalRequest.url?.includes('/logout')) {
         return Promise.reject(error)
       }
 
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject })
-        }).then(() => http(originalRequest))
+        }).then(() => http(originalRequest)).catch(err => Promise.reject(err))
       }
 
       originalRequest._retry = true
@@ -68,7 +69,13 @@ http.interceptors.response.use(
         return http(originalRequest)
       } catch (refreshError) {
         processQueue(refreshError)
-        window.location.replace('/')
+        // Clear auth state without page reload
+        const { useAuthStore } = await import('@/stores/auth')
+        const authStore = useAuthStore()
+        authStore.clearUser()
+        // Use Vue Router for navigation instead of hard reload
+        const { default: router } = await import('@/router')
+        router.push({ name: 'login', query: { redirect: window.location.pathname } })
         return Promise.reject(refreshError)
       } finally {
         isRefreshing = false

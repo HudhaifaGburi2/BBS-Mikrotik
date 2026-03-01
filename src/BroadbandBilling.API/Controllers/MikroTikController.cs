@@ -6,6 +6,7 @@ namespace BroadbandBilling.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize(Roles = "SuperAdmin,Admin")]
 public class MikroTikController : ControllerBase
 {
     private readonly IMikroTikService _mikroTikService;
@@ -39,7 +40,6 @@ public class MikroTikController : ControllerBase
     /// Get list of all PPP users from MikroTik
     /// </summary>
     [HttpPost("ppp-users")]
-    [AllowAnonymous]
     public async Task<ActionResult<MikroTikResult<List<PppUserDto>>>> GetPppUsers(
         [FromBody] MikroTikConnectionRequest request, CancellationToken cancellationToken)
     {
@@ -51,7 +51,6 @@ public class MikroTikController : ControllerBase
     /// Add a new PPP user (subscriber) to MikroTik
     /// </summary>
     [HttpPost("ppp-users/add")]
-    [AllowAnonymous]
     public async Task<ActionResult<MikroTikResult<PppUserDto>>> AddPppUser(
         [FromBody] AddPppUserRequest request, CancellationToken cancellationToken)
     {
@@ -63,7 +62,6 @@ public class MikroTikController : ControllerBase
     /// Remove/Delete a PPP user (subscriber) from MikroTik
     /// </summary>
     [HttpPost("ppp-users/delete")]
-    [AllowAnonymous]
     public async Task<ActionResult<MikroTikResult>> DeletePppUser(
         [FromBody] DeletePppUserRequest request, CancellationToken cancellationToken)
     {
@@ -79,7 +77,6 @@ public class MikroTikController : ControllerBase
     /// Activate a subscription (enable PPP user)
     /// </summary>
     [HttpPost("ppp-users/activate")]
-    [AllowAnonymous]
     public async Task<ActionResult<MikroTikResult>> ActivateUser(
         [FromBody] DeletePppUserRequest request, CancellationToken cancellationToken)
     {
@@ -91,7 +88,6 @@ public class MikroTikController : ControllerBase
     /// Deactivate a subscription (disable PPP user)
     /// </summary>
     [HttpPost("ppp-users/deactivate")]
-    [AllowAnonymous]
     public async Task<ActionResult<MikroTikResult>> DeactivateUser(
         [FromBody] DeletePppUserRequest request, CancellationToken cancellationToken)
     {
@@ -107,7 +103,6 @@ public class MikroTikController : ControllerBase
     /// Get all active PPPoE sessions (online users)
     /// </summary>
     [HttpPost("active-sessions")]
-    [AllowAnonymous]
     public async Task<ActionResult<MikroTikResult<List<ActiveSessionDto>>>> GetActiveSessions(
         [FromBody] MikroTikConnectionRequest request, CancellationToken cancellationToken)
     {
@@ -119,7 +114,6 @@ public class MikroTikController : ControllerBase
     /// Get specific user session info
     /// </summary>
     [HttpPost("user-session")]
-    [AllowAnonymous]
     public async Task<ActionResult<MikroTikResult<ActiveSessionDto?>>> GetUserSession(
         [FromBody] DeletePppUserRequest request, CancellationToken cancellationToken)
     {
@@ -131,7 +125,6 @@ public class MikroTikController : ControllerBase
     /// Disconnect/kick a user from active session
     /// </summary>
     [HttpPost("disconnect-user")]
-    [AllowAnonymous]
     public async Task<ActionResult<MikroTikResult>> DisconnectUser(
         [FromBody] DeletePppUserRequest request, CancellationToken cancellationToken)
     {
@@ -147,7 +140,6 @@ public class MikroTikController : ControllerBase
     /// Update user profile (for renewal or plan change - affects bandwidth/speed)
     /// </summary>
     [HttpPost("ppp-users/update-profile")]
-    [AllowAnonymous]
     public async Task<ActionResult<MikroTikResult>> UpdateUserProfile(
         [FromBody] UpdateProfileRequest request, CancellationToken cancellationToken)
     {
@@ -163,7 +155,6 @@ public class MikroTikController : ControllerBase
     /// Get all PPP profiles (bandwidth plans)
     /// </summary>
     [HttpPost("ppp-profiles")]
-    [AllowAnonymous]
     public async Task<ActionResult<MikroTikResult<List<PppProfileDto>>>> GetPppProfiles(
         [FromBody] MikroTikConnectionRequest request, CancellationToken cancellationToken)
     {
@@ -175,7 +166,6 @@ public class MikroTikController : ControllerBase
     /// Create a new PPP profile (bandwidth plan)
     /// </summary>
     [HttpPost("ppp-profiles/add")]
-    [AllowAnonymous]
     public async Task<ActionResult<MikroTikResult<PppProfileDto>>> AddPppProfile(
         [FromBody] AddProfileRequest request, CancellationToken cancellationToken)
     {
@@ -187,7 +177,6 @@ public class MikroTikController : ControllerBase
     /// Update PPP profile rate limit (bandwidth control)
     /// </summary>
     [HttpPost("ppp-profiles/update")]
-    [AllowAnonymous]
     public async Task<ActionResult<MikroTikResult>> UpdatePppProfile(
         [FromBody] UpdatePppProfileRequest request, CancellationToken cancellationToken)
     {
@@ -199,7 +188,6 @@ public class MikroTikController : ControllerBase
     /// Delete a PPP profile
     /// </summary>
     [HttpPost("ppp-profiles/delete")]
-    [AllowAnonymous]
     public async Task<ActionResult<MikroTikResult>> DeletePppProfile(
         [FromBody] DeleteProfileRequest request, CancellationToken cancellationToken)
     {
