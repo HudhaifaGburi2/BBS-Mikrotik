@@ -38,7 +38,8 @@ async function loadSessions() {
 
 async function disconnectUser(username: string) {
   try {
-    await apiPost('/mikrotik/disconnect-user', { username })
+    // Backend expects pppUsername
+    await apiPost('/mikrotik/disconnect-user', { pppUsername: username })
     toast.success(`تم قطع اتصال ${username}`)
     loadSessions()
   } catch {

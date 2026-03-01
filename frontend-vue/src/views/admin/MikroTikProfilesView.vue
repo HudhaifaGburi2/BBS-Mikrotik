@@ -44,12 +44,19 @@ async function loadProfiles() {
 }
 
 async function addProfile() {
-  if (!newProfile.value.name) {
-    toast.error('الرجاء إدخال اسم البروفايل')
+  if (!newProfile.value.name || !newProfile.value.rateLimit) {
+    toast.error('الرجاء إدخال اسم البروفايل وحد السرعة')
     return
   }
   try {
-    const res = await apiPost<{ success: boolean; message: string }>('/mikrotik/ppp-profiles/add', newProfile.value)
+    // Backend expects profileName, rateLimit, localAddress, remoteAddress
+    const payload = {
+      profileName: newProfile.value.name,
+      rateLimit: newProfile.value.rateLimit,
+      localAddress: newProfile.value.localAddress || null,
+      remoteAddress: newProfile.value.remoteAddress || null
+    }
+    const res = await apiPost<{ success: boolean; message: string }>('/mikrotik/ppp-profiles/add', payload)
     if (res.data?.success) {
       toast.success('تم إضافة البروفايل بنجاح')
       showAddForm.value = false
@@ -66,7 +73,8 @@ async function addProfile() {
 async function deleteProfile(name: string) {
   if (!confirm(`هل أنت متأكد من حذف البروفايل ${name}؟`)) return
   try {
-    const res = await apiPost<{ success: boolean; message: string }>('/mikrotik/ppp-profiles/delete', { name })
+    // Backend expects profileName
+    const res = await apiPost<{ success: boolean; message: string }>('/mikrotik/ppp-profiles/delete', { profileName: name })
     if (res.data?.success) {
       toast.success('تم حذف البروفايل')
       loadProfiles()

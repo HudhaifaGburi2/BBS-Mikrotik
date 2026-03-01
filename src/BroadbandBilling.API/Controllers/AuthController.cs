@@ -112,6 +112,7 @@ public class AuthController : ControllerBase
 
     [HttpPost("refresh-token")]
     [AllowAnonymous]
+    [Consumes("application/json", "application/x-www-form-urlencoded", "text/plain")]
     public async Task<ActionResult> RefreshToken()
     {
         var refreshToken = Request.Cookies[RefreshTokenCookie];

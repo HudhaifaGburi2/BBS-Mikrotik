@@ -49,7 +49,14 @@ async function addUser() {
     return
   }
   try {
-    const res = await apiPost<{ success: boolean; message: string }>('/mikrotik/ppp-users/add', newUser.value)
+    // Backend expects pppUsername, pppPassword, profile, service
+    const payload = {
+      pppUsername: newUser.value.name,
+      pppPassword: newUser.value.password,
+      profile: newUser.value.profile,
+      service: newUser.value.service
+    }
+    const res = await apiPost<{ success: boolean; message: string }>('/mikrotik/ppp-users/add', payload)
     if (res.data?.success) {
       toast.success('تم إضافة المستخدم بنجاح')
       showAddForm.value = false
@@ -66,7 +73,8 @@ async function addUser() {
 async function deleteUser(username: string) {
   if (!confirm(`هل أنت متأكد من حذف المستخدم ${username}؟`)) return
   try {
-    const res = await apiPost<{ success: boolean; message: string }>('/mikrotik/ppp-users/delete', { username })
+    // Backend expects pppUsername
+    const res = await apiPost<{ success: boolean; message: string }>('/mikrotik/ppp-users/delete', { pppUsername: username })
     if (res.data?.success) {
       toast.success('تم حذف المستخدم')
       loadUsers()
@@ -81,7 +89,8 @@ async function deleteUser(username: string) {
 async function toggleUser(username: string, disabled: boolean) {
   const endpoint = disabled ? '/mikrotik/ppp-users/activate' : '/mikrotik/ppp-users/deactivate'
   try {
-    const res = await apiPost<{ success: boolean; message: string }>(endpoint, { username })
+    // Backend expects pppUsername
+    const res = await apiPost<{ success: boolean; message: string }>(endpoint, { pppUsername: username })
     if (res.data?.success) {
       toast.success(disabled ? 'تم تفعيل المستخدم' : 'تم تعطيل المستخدم')
       loadUsers()

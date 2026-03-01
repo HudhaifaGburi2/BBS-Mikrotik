@@ -64,7 +64,8 @@ http.interceptors.response.use(
       console.log('[HTTP] 401 received, attempting token refresh...')
 
       try {
-        await http.post('/auth/refresh-token')
+        // Send empty request - refresh token is in HttpOnly cookie
+        await http.post('/auth/refresh-token', {})
         console.log('[HTTP] Token refresh successful')
         processQueue(null)
         return http(originalRequest)
