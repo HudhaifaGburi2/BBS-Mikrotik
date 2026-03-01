@@ -15,13 +15,29 @@ export default defineConfig({
     proxy: {
       '/api': {
         target: 'http://localhost:5286',
-        changeOrigin: false,  // Keep origin as localhost:8080 so cookies work
+        changeOrigin: true,
         secure: false,
+        ws: true,
+        // Rewrite cookies to work with the proxy
+        cookieDomainRewrite: {
+          '*': ''  // Remove domain from all cookies so they work on localhost
+        },
+        cookiePathRewrite: {
+          '*': '/'  // Ensure all cookies have path=/
+        },
         configure: (proxy) => {
-          proxy.on('proxyReq', (proxyReq, req) => {
-            // Forward cookies from browser to backend
+          // Log proxy requests for debugging
+          proxy.on('proxyReq', (_proxyReq, req) => {
+            console.log(`[Proxy] ${req.method} ${req.url}`);
             if (req.headers.cookie) {
-              proxyReq.setHeader('Cookie', req.headers.cookie);
+              console.log(`[Proxy] Forwarding cookies: ${req.headers.cookie.substring(0, 50)}...`);
+            }
+          });
+          // Log proxy responses for debugging
+          proxy.on('proxyRes', (proxyRes, _req) => {
+            const setCookie = proxyRes.headers['set-cookie'];
+            if (setCookie) {
+              console.log(`[Proxy] Set-Cookie from backend: ${JSON.stringify(setCookie).substring(0, 100)}...`);
             }
           });
         },
