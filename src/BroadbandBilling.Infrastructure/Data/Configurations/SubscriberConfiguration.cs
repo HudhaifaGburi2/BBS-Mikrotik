@@ -64,6 +64,9 @@ public class SubscriberConfiguration : IEntityTypeConfiguration<Subscriber>
             .IsRequired();
 
         builder.Property(s => s.UpdatedAt);
+        
+        builder.Property(s => s.UserId)
+            .IsRequired(false);
 
         builder.HasIndex(s => s.UserId).IsUnique().HasFilter("[UserId] IS NOT NULL");
         builder.HasIndex(s => s.Email);

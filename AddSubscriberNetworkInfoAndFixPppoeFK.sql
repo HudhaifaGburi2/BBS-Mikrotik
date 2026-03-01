@@ -1,8 +1,35 @@
 -- Migration: AddSubscriberNetworkInfoAndFixPppoeFK
--- This script fixes the shadow FK issue and ensures all subscriber columns exist
+-- This script fixes the shadow FK issue, makes UserId nullable, and ensures all subscriber columns exist
 -- Run this script on your BroadbandBillingDb database
 
 BEGIN TRANSACTION;
+GO
+
+-- Step 0: Make UserId nullable in Subscribers table
+IF EXISTS (SELECT 1 FROM sys.columns WHERE name = 'UserId' AND object_id = OBJECT_ID('Subscribers') AND is_nullable = 0)
+BEGIN
+    -- Drop the unique index first
+    IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_Subscribers_UserId' AND object_id = OBJECT_ID('Subscribers'))
+    BEGIN
+        DROP INDEX [IX_Subscribers_UserId] ON [Subscribers];
+    END
+    
+    -- Drop any default constraint
+    DECLARE @var0 sysname;
+    SELECT @var0 = [d].[name]
+    FROM [sys].[default_constraints] [d]
+    INNER JOIN [sys].[columns] [c] ON [d].[parent_column_id] = [c].[column_id] AND [d].[parent_object_id] = [c].[object_id]
+    WHERE ([d].[parent_object_id] = OBJECT_ID(N'[Subscribers]') AND [c].[name] = N'UserId');
+    IF @var0 IS NOT NULL EXEC(N'ALTER TABLE [Subscribers] DROP CONSTRAINT [' + @var0 + '];');
+    
+    -- Make UserId nullable
+    ALTER TABLE [Subscribers] ALTER COLUMN [UserId] uniqueidentifier NULL;
+    
+    -- Recreate the unique filtered index
+    CREATE UNIQUE INDEX [IX_Subscribers_UserId] ON [Subscribers] ([UserId]) WHERE [UserId] IS NOT NULL;
+    
+    PRINT 'UserId column made nullable';
+END
 GO
 
 -- Step 1: Drop the shadow foreign key SubscriberId1 from PppoeAccounts

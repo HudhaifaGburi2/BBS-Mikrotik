@@ -106,10 +106,10 @@ public class CreateSubscriberCommandHandler : IRequestHandler<CreateSubscriberCo
 
                 await _unitOfWork.PppoeAccounts.AddAsync(pppoeAccount, cancellationToken);
 
-                // MikroTik sync is bypassed — admin can trigger sync manually later
+                // Sync with MikroTik if device is available
                 if (mikroTikDevice != null)
                 {
-                    _logger.LogInformation("MikroTik device found but sync bypassed for subscriber {SubscriberId}. PPPoE account saved for manual sync.", subscriber.Id);
+                    await SyncPppoeAccountWithMikroTik(pppoeAccount, mikroTikDevice, cancellationToken);
                 }
                 else
                 {
