@@ -47,7 +47,7 @@ public static class DependencyInjection
         services.AddScoped<SuspendExpiredSubscriptionsJob>();
         services.AddScoped<UsageSyncJob>();
 
-        var hangfireConnectionString = configuration.GetConnectionString("HangfireConnection") ?? connectionString;
+        /*var hangfireConnectionString = configuration.GetConnectionString("HangfireConnection") ?? connectionString;
 
         services.AddHangfire(config => config
             .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
@@ -62,7 +62,7 @@ public static class DependencyInjection
                 DisableGlobalLocks = true
             }));
 
-        services.AddHangfireServer();
+        services.AddHangfireServer();*/
 
         return services;
     }

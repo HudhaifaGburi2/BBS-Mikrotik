@@ -138,8 +138,8 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-var dashboardPath = builder.Configuration["Hangfire:DashboardPath"] ?? "/hangfire";
-app.MapHangfireDashboard(dashboardPath);
+//var dashboardPath = builder.Configuration["Hangfire:DashboardPath"] ?? "/hangfire";
+//app.MapHangfireDashboard(dashboardPath);
 
 Log.Information("Starting Broadband Billing API");
 Log.Information("API URL: {Url}", app.Urls.FirstOrDefault() ?? "Not available");

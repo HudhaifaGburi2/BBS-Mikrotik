@@ -32,7 +32,7 @@ public class LoginHistoryConfiguration : IEntityTypeConfiguration<LoginHistory>
             .HasColumnType("NVARCHAR(200)");
         
         builder.Property(l => l.Browser)
-            .HasMaxLength(100);
+            .HasMaxLength(500);
         
         builder.Property(l => l.OperatingSystem)
             .HasMaxLength(100);
