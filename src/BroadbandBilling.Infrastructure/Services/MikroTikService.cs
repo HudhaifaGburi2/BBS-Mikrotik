@@ -187,20 +187,30 @@ public class MikroTikService : IMikroTikService
             async () =>
             {
                 using var connection = await CreateConnectionAsync(request);
-                var activeSessions = connection.LoadAll<PppActive>();
-                var sessions = activeSessions.Select(s => new ActiveSessionDto
+                List<ActiveSessionDto> sessions;
+                try
                 {
-                    Id = s.Id?.ToString() ?? string.Empty,
-                    Name = s.Name,
-                    Service = s.Service,
-                    CallerId = s.CallerId,
-                    Address = s.Address,
-                    Uptime = s.Uptime,
-                    Encoding = s.Encoding,
-                    SessionId = s.SessionId,
-                    LimitBytesIn = s.LimitBytesIn,
-                    LimitBytesOut = s.LimitBytesOut
-                }).ToList();
+                    var activeSessions = connection.LoadAll<PppActive>();
+                    sessions = activeSessions.Select(s => new ActiveSessionDto
+                    {
+                        Id = s.Id?.ToString() ?? string.Empty,
+                        Name = s.Name,
+                        Service = s.Service,
+                        CallerId = s.CallerId,
+                        Address = s.Address,
+                        Uptime = s.Uptime,
+                        Encoding = s.Encoding,
+                        SessionId = s.SessionId,
+                        LimitBytesIn = s.LimitBytesIn,
+                        LimitBytesOut = s.LimitBytesOut
+                    }).ToList();
+                }
+                catch (NotImplementedException ex) when (ex.Message.Contains("!empty"))
+                {
+                    // tik4net throws NotImplementedException for empty responses - no active sessions
+                    _logger.LogInformation("No active sessions found on MikroTik at {Host}", request.Host);
+                    sessions = new List<ActiveSessionDto>();
+                }
 
                 _logger.LogInformation("Retrieved {Count} active sessions from MikroTik at {Host}", sessions.Count, request.Host);
                 return MikroTikResult<List<ActiveSessionDto>>.SuccessResult(sessions, "تم جلب الجلسات النشطة بنجاح");

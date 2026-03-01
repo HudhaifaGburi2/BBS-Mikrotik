@@ -53,7 +53,7 @@ public class PppoeAccountConfiguration : IEntityTypeConfiguration<PppoeAccount>
         builder.Property(p => p.UpdatedAt);
 
         builder.HasOne(p => p.Subscriber)
-            .WithMany()
+            .WithMany(s => s.PppoeAccounts)
             .HasForeignKey(p => p.SubscriberId)
             .OnDelete(DeleteBehavior.Restrict);
 

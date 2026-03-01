@@ -36,6 +36,26 @@ public class SubscriberConfiguration : IEntityTypeConfiguration<Subscriber>
         
         builder.Property(s => s.PostalCode)
             .HasColumnType("NVARCHAR(20)");
+        
+        // Device Information
+        builder.Property(s => s.LastLoginDevice)
+            .HasColumnType("NVARCHAR(MAX)");
+        
+        builder.Property(s => s.LastLoginBrowser)
+            .HasColumnType("NVARCHAR(MAX)");
+        
+        builder.Property(s => s.LastLoginOS)
+            .HasColumnType("NVARCHAR(MAX)");
+        
+        // Network Information
+        builder.Property(s => s.MacAddress)
+            .HasColumnType("NVARCHAR(MAX)");
+        
+        builder.Property(s => s.IpAddress)
+            .HasColumnType("NVARCHAR(MAX)");
+        
+        builder.Property(s => s.MikroTikUsername)
+            .HasColumnType("NVARCHAR(MAX)");
 
         builder.Property(s => s.IsActive)
             .IsRequired();

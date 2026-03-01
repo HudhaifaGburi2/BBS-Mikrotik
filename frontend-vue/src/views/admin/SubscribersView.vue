@@ -50,7 +50,13 @@ async function handleSuspend() {
   }
 }
 
-onMounted(() => store.fetchSubscribers())
+onMounted(async () => {
+  try {
+    await store.fetchSubscribers()
+  } catch (error: any) {
+    toast.error(error.message || 'فشل جلب المشتركين')
+  }
+})
 </script>
 
 <template>

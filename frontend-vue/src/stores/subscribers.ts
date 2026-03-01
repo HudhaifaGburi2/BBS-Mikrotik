@@ -23,11 +23,17 @@ export const useSubscribersStore = defineStore('subscribers', () => {
 
       const res = await apiGet<PagedResult<Subscriber>>(`/subscribers?${params}`)
       if (res.data) {
-        subscribers.value = res.data.items
-        totalPages.value = res.data.totalPages
-        totalCount.value = res.data.totalCount
-        currentPage.value = res.data.page
+        subscribers.value = res.data.items ?? []
+        totalPages.value = res.data.totalPages ?? 1
+        totalCount.value = res.data.totalCount ?? 0
+        currentPage.value = res.data.page ?? 1
       }
+    } catch (error: any) {
+      subscribers.value = []
+      totalPages.value = 1
+      totalCount.value = 0
+      const errorMsg = error.response?.data?.details || error.response?.data?.error || error.message
+      throw new Error(errorMsg || 'فشل جلب المشتركين')
     } finally {
       isLoading.value = false
     }
@@ -46,8 +52,13 @@ export const useSubscribersStore = defineStore('subscribers', () => {
   }
 
   async function createSubscriber(command: CreateSubscriberCommand) {
-    const res = await apiPost<Subscriber>('/subscribers', command)
-    return res.data
+    try {
+      const res = await apiPost<Subscriber>('/subscribers', command)
+      return res.data
+    } catch (error: any) {
+      const errorMsg = error.response?.data?.details || error.response?.data?.error || error.message
+      throw new Error(errorMsg || 'فشل إنشاء المشترك')
+    }
   }
 
   async function updateSubscriber(id: string, command: UpdateSubscriberCommand) {
