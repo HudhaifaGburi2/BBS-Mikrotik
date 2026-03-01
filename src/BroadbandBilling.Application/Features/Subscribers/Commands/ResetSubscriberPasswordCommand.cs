@@ -79,11 +79,16 @@ public record ResetMikroTikPasswordCommand(
 public class ResetMikroTikPasswordCommandHandler : IRequestHandler<ResetMikroTikPasswordCommand, string>
 {
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IMikroTikService _mikroTikService;
     private readonly ILogger<ResetMikroTikPasswordCommandHandler> _logger;
 
-    public ResetMikroTikPasswordCommandHandler(IUnitOfWork unitOfWork, ILogger<ResetMikroTikPasswordCommandHandler> logger)
+    public ResetMikroTikPasswordCommandHandler(
+        IUnitOfWork unitOfWork, 
+        IMikroTikService mikroTikService,
+        ILogger<ResetMikroTikPasswordCommandHandler> logger)
     {
         _unitOfWork = unitOfWork;
+        _mikroTikService = mikroTikService;
         _logger = logger;
     }
 
@@ -98,7 +103,11 @@ public class ResetMikroTikPasswordCommandHandler : IRequestHandler<ResetMikroTik
 
         foreach (var pppoeAccount in subscriber.PppoeAccounts)
         {
+            // Update password in database
             pppoeAccount.UpdatePassword(request.NewPassword);
+
+            // Sync with MikroTik
+            await SyncPasswordWithMikroTik(pppoeAccount, request.NewPassword, cancellationToken);
         }
 
         await _unitOfWork.CommitAsync(cancellationToken);
@@ -106,6 +115,61 @@ public class ResetMikroTikPasswordCommandHandler : IRequestHandler<ResetMikroTik
         _logger.LogInformation("Reset MikroTik password for subscriber {SubscriberId} ({Count} accounts)", 
             subscriber.Id, subscriber.PppoeAccounts.Count);
         return request.NewPassword;
+    }
+
+    private async Task SyncPasswordWithMikroTik(PppoeAccount pppoeAccount, string newPassword, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var device = await _unitOfWork.MikroTikDevices.GetByIdAsync(pppoeAccount.MikroTikDeviceId, cancellationToken);
+            if (device == null)
+            {
+                _logger.LogWarning("MikroTik device {DeviceId} not found for PPPoE account {Username}", 
+                    pppoeAccount.MikroTikDeviceId, pppoeAccount.Username);
+                return;
+            }
+
+            // Delete and re-add user with new password (MikroTik doesn't support password update directly)
+            var deleteRequest = new DeletePppUserRequest
+            {
+                Host = device.IpAddress.Value,
+                Username = device.Username,
+                Password = device.Password,
+                PppUsername = pppoeAccount.Username
+            };
+
+            await _mikroTikService.DeletePppUserAsync(deleteRequest, cancellationToken);
+
+            var addRequest = new AddPppUserRequest
+            {
+                Host = device.IpAddress.Value,
+                Username = device.Username,
+                Password = device.Password,
+                PppUsername = pppoeAccount.Username,
+                PppPassword = newPassword,
+                Profile = pppoeAccount.ProfileName,
+                Service = "pppoe"
+            };
+
+            var result = await _mikroTikService.AddPppUserAsync(addRequest, cancellationToken);
+
+            if (result.Success)
+            {
+                pppoeAccount.MarkAsSynced();
+                _logger.LogInformation("Successfully synced password change for PPPoE user {Username} with MikroTik", pppoeAccount.Username);
+            }
+            else
+            {
+                pppoeAccount.MarkAsSyncFailed();
+                _logger.LogWarning("Failed to sync password change for PPPoE user {Username} with MikroTik: {Error}", 
+                    pppoeAccount.Username, result.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            pppoeAccount.MarkAsSyncFailed();
+            _logger.LogError(ex, "Error syncing password change for PPPoE account {Username} with MikroTik", pppoeAccount.Username);
+        }
     }
 }
 
