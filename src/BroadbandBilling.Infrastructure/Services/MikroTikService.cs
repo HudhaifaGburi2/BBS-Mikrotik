@@ -527,7 +527,7 @@ public class MikroTikSettings
     public int Port { get; set; } = 8728;
     public string Username { get; set; } = string.Empty;
     public string Password { get; set; } = string.Empty;
-    public int TimeoutSeconds { get; set; } = 30;
+    public int Timeout { get; set; } = 30;  // Match appsettings.json property name
     public int RetryAttempts { get; set; } = 3;
     public int InitialRetryDelayMs { get; set; } = 1000;
 }

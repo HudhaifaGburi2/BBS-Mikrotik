@@ -157,7 +157,7 @@ public class AuthController : ControllerBase
             HttpOnly = true,
             Secure = !isDev,
             SameSite = isDev ? SameSiteMode.Lax : SameSiteMode.Strict,
-            Path = "/api/auth",
+            Path = "/",  // Changed from /api/auth to / for better cookie handling through proxy
             Expires = rememberMe
                 ? DateTimeOffset.UtcNow.AddDays(30)
                 : DateTimeOffset.UtcNow.AddDays(7)
@@ -180,7 +180,7 @@ public class AuthController : ControllerBase
         Response.Cookies.Append(RefreshTokenCookie, "", new CookieOptions
         {
             HttpOnly = true,
-            Path = "/api/auth",
+            Path = "/",  // Match the path used when setting the cookie
             Expires = DateTimeOffset.UtcNow.AddDays(-1)
         });
     }
