@@ -89,11 +89,11 @@ async function handleSubmit() {
         fullName: sanitize(form.value.fullName),
         email: sanitize(form.value.email),
         phoneNumber: sanitize(form.value.phoneNumber),
-        nationalId: form.value.nationalId ? sanitize(form.value.nationalId) : null,
+        nationalId: form.value.nationalId ? sanitize(form.value.nationalId) : undefined,
         address: sanitize(form.value.address),
-        planId: form.value.planId || null,
-        pppUsername: form.value.mikroTikUsername ? sanitize(form.value.mikroTikUsername) : null,
-        pppPassword: form.value.mikroTikPassword || null,
+        planId: form.value.planId ? form.value.planId : undefined,
+        pppUsername: form.value.mikroTikUsername ? sanitize(form.value.mikroTikUsername) : undefined,
+        pppPassword: form.value.mikroTikPassword ? form.value.mikroTikPassword : undefined,
       } as any)
       toast.success('تم إنشاء المشترك بنجاح')
     }

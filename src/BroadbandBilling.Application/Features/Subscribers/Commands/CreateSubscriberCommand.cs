@@ -192,6 +192,30 @@ public class CreateSubscriberCommandHandler : IRequestHandler<CreateSubscriberCo
 
     private static SubscriberDto MapToDto(Subscriber subscriber)
     {
+        var subscriptions = subscriber.Subscriptions?.Select(s => new SubscriptionDto(
+            s.Id,
+            s.PlanId,
+            s.Plan?.Name ?? "Unknown",
+            s.Status,
+            s.BillingPeriod.StartDate,
+            s.BillingPeriod.EndDate,
+            s.ActivatedAt,
+            s.SuspendedAt
+        )).ToList() ?? new List<SubscriptionDto>();
+
+        var now = DateTime.UtcNow;
+        var pppoeAccounts = subscriber.PppoeAccounts?.Select(p => new PppoeAccountDto(
+            p.Id,
+            p.Username,
+            p.ProfileName,
+            p.IsEnabled,
+            p.IsSyncedWithMikroTik,
+            p.LastSyncDate,
+            p.ValidationStatus,
+            p.LastConnectedAt.HasValue && p.LastConnectedAt.Value > now.AddMinutes(-5),
+            p.LastConnectedAt
+        )).ToList() ?? new List<PppoeAccountDto>();
+
         return new SubscriberDto(
             subscriber.Id,
             subscriber.FullName,
@@ -202,27 +226,8 @@ public class CreateSubscriberCommandHandler : IRequestHandler<CreateSubscriberCo
             subscriber.IsActive,
             subscriber.CreatedAt,
             subscriber.UpdatedAt,
-            subscriber.Subscriptions.Select(s => new SubscriptionDto(
-                s.Id,
-                s.PlanId,
-                s.Plan?.Name ?? "Unknown",
-                s.Status,
-                s.BillingPeriod.StartDate,
-                s.BillingPeriod.EndDate,
-                s.ActivatedAt,
-                s.SuspendedAt
-            )).ToList(),
-            subscriber.PppoeAccounts.Select(p => new PppoeAccountDto(
-                p.Id,
-                p.Username,
-                p.ProfileName,
-                p.IsEnabled,
-                p.IsSyncedWithMikroTik,
-                p.LastSyncDate,
-                p.ValidationStatus,
-                p.IsOnline(),
-                p.LastConnectedAt
-            )).ToList()
+            subscriptions,
+            pppoeAccounts
         );
     }
 }
