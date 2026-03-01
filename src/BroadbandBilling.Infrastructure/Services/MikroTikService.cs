@@ -420,9 +420,21 @@ public class MikroTikService : IMikroTikService
     {
         var connection = ConnectionFactory.CreateConnection(TikConnectionType.Api);
         
+        // Use request values if provided, otherwise fall back to appsettings.json defaults
+        var host = !string.IsNullOrEmpty(request.Host) ? request.Host : _settings.Host;
+        var username = !string.IsNullOrEmpty(request.Username) ? request.Username : _settings.Username;
+        var password = !string.IsNullOrEmpty(request.Password) ? request.Password : _settings.Password;
+
+        if (string.IsNullOrEmpty(host) || string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password))
+        {
+            throw new InvalidOperationException("MikroTik connection settings are not configured. Please check appsettings.json");
+        }
+
+        _logger.LogDebug("Connecting to MikroTik at {Host} with user {Username}", host, username);
+        
         await Task.Run(() => 
         {
-            connection.Open(request.Host, request.Username, request.Password);
+            connection.Open(host, username, password);
         });
 
         return connection;
@@ -511,6 +523,10 @@ public class MikroTikService : IMikroTikService
 
 public class MikroTikSettings
 {
+    public string Host { get; set; } = string.Empty;
+    public int Port { get; set; } = 8728;
+    public string Username { get; set; } = string.Empty;
+    public string Password { get; set; } = string.Empty;
     public int TimeoutSeconds { get; set; } = 30;
     public int RetryAttempts { get; set; } = 3;
     public int InitialRetryDelayMs { get; set; } = 1000;

@@ -6,6 +6,7 @@ import type { UserData, UserType } from '@/types'
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<UserData | null>(null)
   const isLoading = ref(false)
+  const sessionChecked = ref(false)
 
   const isAuthenticated = computed(() => user.value !== null)
   const isAdmin = computed(() => user.value?.userType === 'Admin')
@@ -15,10 +16,14 @@ export const useAuthStore = defineStore('auth', () => {
 
   function setUser(data: UserData) {
     user.value = data
+    sessionChecked.value = true
   }
 
   function clearUser() {
     user.value = null
+    sessionChecked.value = false
+    // Clear persisted state
+    sessionStorage.removeItem('pinia-auth')
   }
 
   async function login(username: string, password: string, rememberMe = false): Promise<UserType> {
@@ -69,7 +74,16 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function checkSession(): Promise<boolean> {
+    // If we already have user data from persistence, trust it
+    // The JWT cookie will be validated by the backend on actual API calls
+    if (user.value !== null) {
+      sessionChecked.value = true
+      return true
+    }
+
+    // Try to restore from API only if no persisted state
     try {
+      isLoading.value = true
       const res = await http.get<UserData>('/auth/me')
       if (res.data) {
         setUser(res.data)
@@ -77,14 +91,19 @@ export const useAuthStore = defineStore('auth', () => {
       }
       return false
     } catch {
-      clearUser()
+      // Don't clear user here - let the 401 interceptor handle it
+      // This prevents logout on temporary network issues
       return false
+    } finally {
+      isLoading.value = false
+      sessionChecked.value = true
     }
   }
 
   return {
     user,
     isLoading,
+    sessionChecked,
     isAuthenticated,
     isAdmin,
     isSubscriber,

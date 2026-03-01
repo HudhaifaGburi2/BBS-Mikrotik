@@ -78,12 +78,16 @@ const router = createRouter({
 router.beforeEach(async (to) => {
   const auth = useAuthStore()
 
-  // If route requires auth and user is not authenticated
-  if (to.meta.requiresAuth && !auth.isAuthenticated) {
-    // Try to restore session from cookie
-    const restored = await auth.checkSession()
-    if (!restored) {
-      return { name: 'login' }
+  // If route requires auth
+  if (to.meta.requiresAuth) {
+    // First check if we have persisted user data (from sessionStorage via Pinia plugin)
+    // If user.value is already set from persistence, trust it
+    if (!auth.isAuthenticated) {
+      // No persisted state, try to restore session from API
+      const restored = await auth.checkSession()
+      if (!restored) {
+        return { name: 'login', query: { redirect: to.fullPath } }
+      }
     }
   }
 

@@ -82,7 +82,7 @@ async function recordPayment() {
       invoiceId: recordForm.value.invoiceId,
       amount: recordForm.value.amount,
       method: recordForm.value.method,
-      paymentDate: recordForm.value.paymentDate,
+      paymentDate: recordForm.value.paymentDate || null,
       transactionId: recordForm.value.transactionId || null,
       notes: recordForm.value.notes || null,
     })

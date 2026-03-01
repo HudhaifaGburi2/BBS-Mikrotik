@@ -34,6 +34,8 @@ public static class DependencyInjection
         services.AddScoped<IMikroTikDeviceRepository, MikroTikDeviceRepository>();
         services.AddScoped<IUsageLogRepository, UsageLogRepository>();
 
+        // Configure MikroTik settings from appsettings.json
+        services.Configure<MikroTikSettings>(configuration.GetSection("MikroTik"));
         services.AddScoped<IMikroTikService, MikroTikService>();
         services.AddScoped<ISubscriptionService, SubscriptionService>();
         services.AddScoped<IPlanService, PlanService>();
