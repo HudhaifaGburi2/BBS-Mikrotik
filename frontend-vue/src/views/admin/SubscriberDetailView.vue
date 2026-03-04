@@ -37,6 +37,8 @@ const systemPassword = ref('')
 const mikroTikPassword = ref('')
 const showSystemPwForm = ref(false)
 const showMikroTikPwForm = ref(false)
+const isResettingSystemPw = ref(false)
+const isResettingMikroTikPw = ref(false)
 
 // Plan change
 const showChangePlan = ref(false)
@@ -59,6 +61,7 @@ async function handleResetSystemPassword() {
     toast.error('كلمة المرور يجب أن تكون 8 أحرف على الأقل')
     return
   }
+  isResettingSystemPw.value = true
   try {
     await store.resetSystemPassword(id.value, systemPassword.value)
     toast.success('تم تغيير كلمة مرور النظام بنجاح')
@@ -66,6 +69,8 @@ async function handleResetSystemPassword() {
     showSystemPwForm.value = false
   } catch {
     toast.error('فشل تغيير كلمة مرور النظام — قد لا يكون لدى المشترك حساب نظام')
+  } finally {
+    isResettingSystemPw.value = false
   }
 }
 
@@ -74,13 +79,17 @@ async function handleResetMikroTikPassword() {
     toast.error('الرجاء إدخال كلمة المرور الجديدة')
     return
   }
+  isResettingMikroTikPw.value = true
   try {
     await store.resetMikroTikPassword(id.value, mikroTikPassword.value)
     toast.success('تم تغيير كلمة مرور MikroTik بنجاح')
     mikroTikPassword.value = ''
     showMikroTikPwForm.value = false
+    await store.fetchSubscriber(id.value)
   } catch {
-    toast.error('فشل تغيير كلمة مرور MikroTik — قد لا يكون لدى المشترك حساب PPPoE')
+    toast.error('فشل تغيير كلمة مرور MikroTik — تحقق من اتصال MikroTik')
+  } finally {
+    isResettingMikroTikPw.value = false
   }
 }
 
@@ -243,8 +252,11 @@ async function handleDelete() {
             </button>
           </div>
           <div v-if="showSystemPwForm" class="space-y-2">
-            <input v-model="systemPassword" type="password" placeholder="كلمة المرور الجديدة (8 أحرف على الأقل)" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-coastal-blue focus:border-transparent" />
-            <button class="w-full px-4 py-2 bg-coastal-blue text-white rounded-lg text-sm hover:bg-coastal-blue-dark transition-colors" @click="handleResetSystemPassword">حفظ كلمة مرور النظام</button>
+            <input v-model="systemPassword" type="password" placeholder="كلمة المرور الجديدة (8 أحرف على الأقل)" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-coastal-blue focus:border-transparent" :disabled="isResettingSystemPw" />
+            <button class="w-full px-4 py-2 bg-coastal-blue text-white rounded-lg text-sm hover:bg-coastal-blue-dark transition-colors disabled:opacity-50" :disabled="isResettingSystemPw" @click="handleResetSystemPassword">
+              <span v-if="isResettingSystemPw">جاري الحفظ...</span>
+              <span v-else>حفظ كلمة مرور النظام</span>
+            </button>
           </div>
         </div>
 
@@ -255,13 +267,17 @@ async function handleDelete() {
               <h4 class="font-semibold text-charcoal text-sm">كلمة مرور MikroTik</h4>
               <p class="text-xs text-light-gray">لاتصال PPPoE بالراوتر</p>
             </div>
-            <button class="text-xs px-3 py-1 bg-jazan-green text-white rounded-lg hover:bg-jazan-green-dark transition-colors" @click="showMikroTikPwForm = !showMikroTikPwForm">
+            <button class="text-xs px-3 py-1 bg-jazan-green text-white rounded-lg hover:bg-jazan-green-dark transition-colors" :disabled="isResettingMikroTikPw" @click="showMikroTikPwForm = !showMikroTikPwForm">
               {{ showMikroTikPwForm ? 'إلغاء' : 'تغيير' }}
             </button>
           </div>
           <div v-if="showMikroTikPwForm" class="space-y-2">
-            <input v-model="mikroTikPassword" type="password" placeholder="كلمة مرور MikroTik الجديدة" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-jazan-green focus:border-transparent" />
-            <button class="w-full px-4 py-2 bg-jazan-green text-white rounded-lg text-sm hover:bg-jazan-green-dark transition-colors" @click="handleResetMikroTikPassword">حفظ كلمة مرور MikroTik</button>
+            <input v-model="mikroTikPassword" type="text" placeholder="كلمة مرور MikroTik الجديدة" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-jazan-green focus:border-transparent" :disabled="isResettingMikroTikPw" />
+            <p class="text-xs text-light-gray">ملاحظة: كلمة المرور ستُحفظ كنص عادي في MikroTik</p>
+            <button class="w-full px-4 py-2 bg-jazan-green text-white rounded-lg text-sm hover:bg-jazan-green-dark transition-colors disabled:opacity-50" :disabled="isResettingMikroTikPw" @click="handleResetMikroTikPassword">
+              <span v-if="isResettingMikroTikPw">جاري الحفظ والمزامنة...</span>
+              <span v-else>حفظ كلمة مرور MikroTik</span>
+            </button>
           </div>
         </div>
       </div>

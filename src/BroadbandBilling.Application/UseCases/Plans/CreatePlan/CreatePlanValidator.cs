@@ -22,9 +22,17 @@ public class CreatePlanValidator : AbstractValidator<CreatePlanCommand>
         RuleFor(x => x.DataLimitGB)
             .GreaterThanOrEqualTo(0).WithMessage("Data limit cannot be negative");
 
+        RuleFor(x => x)
+            .Must(x => x.BillingCycleDays > 0 || (x.BillingCycleHours.HasValue && x.BillingCycleHours.Value > 0))
+            .WithMessage("يجب تحديد مدة الاشتراك بالأيام أو الساعات");
+
         RuleFor(x => x.BillingCycleDays)
-            .GreaterThan(0).WithMessage("Billing cycle must be at least 1 day")
-            .LessThanOrEqualTo(365).WithMessage("Billing cycle cannot exceed 365 days");
+            .LessThanOrEqualTo(365).WithMessage("Billing cycle cannot exceed 365 days")
+            .When(x => x.BillingCycleDays > 0);
+
+        RuleFor(x => x.BillingCycleHours)
+            .LessThanOrEqualTo(8760).WithMessage("Billing cycle hours cannot exceed 8760 (1 year)")
+            .When(x => x.BillingCycleHours.HasValue && x.BillingCycleHours.Value > 0);
 
         RuleFor(x => x.MikroTikProfileName)
             .NotEmpty().WithMessage("MikroTik profile name is required")

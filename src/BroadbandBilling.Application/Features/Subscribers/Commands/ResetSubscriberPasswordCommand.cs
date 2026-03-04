@@ -45,18 +45,30 @@ public class ResetSystemPasswordCommandHandler : IRequestHandler<ResetSystemPass
 
         if (user == null)
         {
-            // Auto-create a system User account for this subscriber (use email as username)
-            var username = subscriber.Email;
-            user = User.CreateSubscriber(
-                username,
-                subscriber.Email,
-                _passwordHasher.HashPassword(request.NewPassword),
-                subscriber.Id
-            );
-            _context.Users.Add(user);
-            subscriber.SetUserId(user.Id);
-
-            _logger.LogInformation("Auto-created system user {Username} for subscriber {SubscriberId}", username, subscriber.Id);
+            // Check if a user with this email already exists
+            var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == subscriber.Email, cancellationToken);
+            if (existingUser != null)
+            {
+                // Link existing user to subscriber and update password
+                user = existingUser;
+                user.PasswordHash = _passwordHasher.HashPassword(request.NewPassword);
+                subscriber.SetUserId(user.Id);
+                _logger.LogInformation("Linked existing user {Username} to subscriber {SubscriberId}", user.Username, subscriber.Id);
+            }
+            else
+            {
+                // Auto-create a system User account for this subscriber (use email as username)
+                var username = subscriber.Email;
+                user = User.CreateSubscriber(
+                    username,
+                    subscriber.Email,
+                    _passwordHasher.HashPassword(request.NewPassword),
+                    subscriber.Id
+                );
+                _context.Users.Add(user);
+                subscriber.SetUserId(user.Id);
+                _logger.LogInformation("Auto-created system user {Username} for subscriber {SubscriberId}", username, subscriber.Id);
+            }
         }
         else
         {

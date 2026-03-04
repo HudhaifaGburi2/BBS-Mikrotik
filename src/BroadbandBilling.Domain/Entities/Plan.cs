@@ -37,6 +37,11 @@ public class Plan : IEntity
         DataLimitGB = dataLimitGB >= 0 ? dataLimitGB : throw new ArgumentException("Data limit cannot be negative", nameof(dataLimitGB));
         BillingCycleDays = billingCycleDays >= 0 ? billingCycleDays : throw new ArgumentException("Billing cycle days cannot be negative", nameof(billingCycleDays));
         BillingCycleHours = billingCycleHours;
+        
+        // Ensure at least 1 hour of billing cycle
+        var totalHours = (billingCycleDays * 24) + (billingCycleHours ?? 0);
+        if (totalHours <= 0)
+            throw new ArgumentException("Billing cycle must be at least 1 hour", nameof(billingCycleDays));
         MikroTikProfileName = mikroTikProfileName ?? throw new ArgumentNullException(nameof(mikroTikProfileName));
         IsActive = true;
         CreatedAt = DateTime.UtcNow;
