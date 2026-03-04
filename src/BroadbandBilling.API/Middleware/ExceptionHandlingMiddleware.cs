@@ -23,6 +23,11 @@ public class ExceptionHandlingMiddleware
         {
             await _next(context);
         }
+        catch (UnauthorizedException ex)
+        {
+            _logger.LogWarning("Authentication failed: {Message}", ex.Message);
+            await HandleExceptionAsync(context, ex);
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "An unhandled exception occurred");

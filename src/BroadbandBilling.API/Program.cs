@@ -111,8 +111,10 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+// Serilog request logging should be first to capture final status codes after exception handling
+app.UseSerilogRequestLogging();
+
 app.UseMiddleware<ExceptionHandlingMiddleware>();
-app.UseMiddleware<RequestLoggingMiddleware>();
 
 if (app.Environment.IsDevelopment())
 {
@@ -122,8 +124,6 @@ if (app.Environment.IsDevelopment())
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "Broadband Billing API v1");
     });
 }
-
-app.UseSerilogRequestLogging();
 
 // Only use HTTPS redirection in production
 if (!app.Environment.IsDevelopment())

@@ -102,6 +102,13 @@ public class User : IEntity
         RefreshTokenExpiryTime = null;
         UpdatedAt = DateTime.UtcNow;
     }
+    
+    public void UnlockAccount()
+    {
+        LockoutEnd = null;
+        AccessFailedCount = 0;
+        UpdatedAt = DateTime.UtcNow;
+    }
 }
 
 public enum UserType

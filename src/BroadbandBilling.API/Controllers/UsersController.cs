@@ -251,6 +251,19 @@ public class UsersController : ControllerBase
         return Ok(new { message = "تم إعادة تعيين كلمة المرور بنجاح" });
     }
 
+    [HttpPut("{id}/unlock")]
+    public async Task<IActionResult> UnlockAccount(Guid id, CancellationToken cancellationToken)
+    {
+        var user = await _context.Users.FindAsync(new object[] { id }, cancellationToken);
+        if (user == null)
+            return NotFound(new { error = "المستخدم غير موجود" });
+
+        user.UnlockAccount();
+        await _context.SaveChangesAsync(cancellationToken);
+
+        return Ok(new { message = "تم فتح قفل الحساب بنجاح" });
+    }
+
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteUser(Guid id, CancellationToken cancellationToken)
     {
