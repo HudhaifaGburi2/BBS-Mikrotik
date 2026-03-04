@@ -15,9 +15,14 @@ public record CreateSubscriberCommand(
     string? NationalId = null,
     string? City = null,
     string? PostalCode = null,
+    string? MacAddress = null,
+    string? IpAddress = null,
     Guid? PlanId = null,
+    DateTime? StartDate = null,
+    bool AutoRenew = false,
     string? PppUsername = null,
-    string? PppPassword = null
+    string? PppPassword = null,
+    bool AutoCreateMikroTik = false
 ) : IRequest<SubscriberDto>;
 
 public class CreateSubscriberCommandHandler : IRequestHandler<CreateSubscriberCommand, SubscriberDto>
@@ -63,44 +68,58 @@ public class CreateSubscriberCommandHandler : IRequestHandler<CreateSubscriberCo
 
         // subscriber.UpdateUserId(user.Id);
 
+        // Set MAC and IP if provided
+        if (!string.IsNullOrEmpty(request.MacAddress) || !string.IsNullOrEmpty(request.IpAddress))
+        {
+            subscriber.UpdateNetworkInfo(request.MacAddress, request.IpAddress, null);
+        }
+
         // Create subscription if plan provided
         if (request.PlanId.HasValue)
         {
-            // Update user password (skip for now as Users repository not implemented)
-            // var user = await _unitOfWork.Users.GetByIdAsync(subscriber.UserId, cancellationToken);
-            // if (user == null)
-            //     throw new NotFoundException($"User account for subscriber {request.SubscriberId} not found");
-
-            // user.UpdatePassword(newPassword);
-
             var plan = await _unitOfWork.Plans.GetByIdAsync(request.PlanId.Value, cancellationToken);
             if (plan == null)
                 throw new NotFoundException($"Plan with ID {request.PlanId} not found");
 
+            // Use provided start date or default to now
+            var startDate = request.StartDate ?? DateTime.UtcNow;
+
             var subscription = Subscription.Create(
                 subscriber.Id,
                 plan.Id,
-                DateTime.UtcNow,
+                startDate,
                 plan.BillingCycleDays
             );
 
             await _unitOfWork.Subscriptions.AddAsync(subscription, cancellationToken);
 
-            // Create PPPoE account if credentials provided
-            if (!string.IsNullOrEmpty(request.PppUsername) && !string.IsNullOrEmpty(request.PppPassword))
-            {
-                // Get first MikroTik device — optional, sync will happen later if not available
-                var mikroTikDevices = await _unitOfWork.MikroTikDevices.GetAllAsync(cancellationToken);
-                var mikroTikDevice = mikroTikDevices.FirstOrDefault(d => d.IsActive);
+            // Get first MikroTik device
+            var mikroTikDevices = await _unitOfWork.MikroTikDevices.GetAllAsync(cancellationToken);
+            var mikroTikDevice = mikroTikDevices.FirstOrDefault(d => d.IsActive);
 
+            // Auto-create MikroTik credentials if requested and plan selected
+            var pppUsername = request.PppUsername;
+            var pppPassword = request.PppPassword;
+
+            if (request.AutoCreateMikroTik && string.IsNullOrEmpty(pppUsername))
+            {
+                // Generate username from subscriber name (sanitized) + random suffix
+                pppUsername = GeneratePppUsername(request.FullName);
+                pppPassword = GeneratePassword();
+                _logger.LogInformation("Auto-generated MikroTik credentials for subscriber: {Username}", pppUsername);
+            }
+
+            // Create PPPoE account if credentials available
+            if (!string.IsNullOrEmpty(pppUsername) && !string.IsNullOrEmpty(pppPassword))
+            {
                 var deviceId = mikroTikDevice?.Id ?? Guid.Empty;
 
                 var pppoeAccount = PppoeAccount.Create(
                     subscriber.Id,
                     subscription.Id,
                     deviceId,
-                    request.PppUsername,
-                    request.PppPassword,
+                    pppUsername,
+                    pppPassword,
                     plan.MikroTikProfileName
                 );
 
@@ -109,6 +128,8 @@ public class CreateSubscriberCommandHandler : IRequestHandler<CreateSubscriberCo
                 // Sync with MikroTik if device is available
                 if (mikroTikDevice != null)
                 {
+                    // Ensure profile exists on MikroTik before adding user
+                    await EnsureProfileExistsOnMikroTik(mikroTikDevice, plan, cancellationToken);
                     await SyncPppoeAccountWithMikroTik(pppoeAccount, mikroTikDevice, cancellationToken);
                 }
                 else
@@ -153,6 +174,70 @@ public class CreateSubscriberCommandHandler : IRequestHandler<CreateSubscriberCo
         }
 
         return new string(password);
+    }
+
+    private string GeneratePppUsername(string fullName)
+    {
+        // Sanitize name: remove special chars, replace spaces with underscores, lowercase
+        var sanitized = new string(fullName
+            .Where(c => char.IsLetterOrDigit(c) || c == ' ')
+            .ToArray())
+            .Replace(" ", "_")
+            .ToLowerInvariant();
+
+        // Limit length and add random suffix for uniqueness
+        if (sanitized.Length > 12) sanitized = sanitized.Substring(0, 12);
+        var suffix = new Random().Next(1000, 9999);
+        return $"{sanitized}_{suffix}";
+    }
+
+    private async Task EnsureProfileExistsOnMikroTik(MikroTikDevice device, Plan plan, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var connectionRequest = new MikroTikConnectionRequest
+            {
+                Host = device.IpAddress.Value,
+                Username = device.Username,
+                Password = device.Password
+            };
+
+            // Check if profile exists
+            var profilesResult = await _mikroTikService.GetPppProfilesAsync(connectionRequest, cancellationToken);
+            if (profilesResult.Success && profilesResult.Data != null)
+            {
+                var profileExists = profilesResult.Data.Any(p => p.Name == plan.MikroTikProfileName);
+                if (!profileExists)
+                {
+                    // Create the profile with rate limit based on plan speed
+                    var rateLimit = $"{plan.SpeedMbps}M/{plan.SpeedMbps}M";
+                    var addProfileRequest = new AddProfileRequest
+                    {
+                        Host = device.IpAddress.Value,
+                        Username = device.Username,
+                        Password = device.Password,
+                        ProfileName = plan.MikroTikProfileName,
+                        RateLimit = rateLimit
+                    };
+
+                    var addResult = await _mikroTikService.AddPppProfileAsync(addProfileRequest, cancellationToken);
+                    if (addResult.Success)
+                    {
+                        _logger.LogInformation("Created MikroTik profile '{ProfileName}' with rate limit {RateLimit}", 
+                            plan.MikroTikProfileName, rateLimit);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Failed to create MikroTik profile '{ProfileName}': {Error}", 
+                            plan.MikroTikProfileName, addResult.Error);
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error ensuring MikroTik profile exists for plan {PlanId}", plan.Id);
+        }
     }
 
     private async Task SyncPppoeAccountWithMikroTik(PppoeAccount pppoeAccount, MikroTikDevice device, CancellationToken cancellationToken)

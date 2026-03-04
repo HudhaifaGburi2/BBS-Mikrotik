@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useSubscribersStore } from '@/stores/subscribers'
 import { usePlansStore } from '@/stores/plans'
@@ -7,6 +7,7 @@ import { useToastStore } from '@/stores/toast'
 import { useValidation } from '@/composables/useValidation'
 import FormField from '@/components/FormField.vue'
 import AppLoader from '@/components/AppLoader.vue'
+import type { CreateSubscriberCommand } from '@/types'
 
 const route = useRoute()
 const router = useRouter()
@@ -29,6 +30,7 @@ const form = ref({
   planId: '',
   startDate: new Date().toISOString().split('T')[0],
   autoRenew: false,
+  autoCreateMikroTik: true,
   mikroTikUsername: '',
   mikroTikPassword: '',
   createSystemAccount: false,
@@ -38,6 +40,56 @@ const form = ref({
 
 const macRegex = /^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/
 const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/
+
+const selectedPlan = computed(() => {
+  if (!form.value.planId) return null
+  return plansStore.plans.find(p => p.id === form.value.planId) || null
+})
+
+const showMikroTikSection = computed(() => !isEdit.value && form.value.planId)
+
+function generateUsername(fullName: string): string {
+  const sanitized = fullName
+    .replace(/[^\p{L}\p{N}\s]/gu, '')
+    .replace(/\s+/g, '_')
+    .toLowerCase()
+    .slice(0, 12)
+  const suffix = Math.floor(1000 + Math.random() * 9000)
+  return `${sanitized}_${suffix}`
+}
+
+function generatePassword(): string {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*'
+  let password = ''
+  for (let i = 0; i < 12; i++) {
+    password += chars.charAt(Math.floor(Math.random() * chars.length))
+  }
+  return password
+}
+
+watch(() => form.value.autoCreateMikroTik, (autoCreate) => {
+  if (autoCreate && form.value.fullName && !form.value.mikroTikUsername) {
+    form.value.mikroTikUsername = generateUsername(form.value.fullName)
+    form.value.mikroTikPassword = generatePassword()
+  }
+})
+
+watch(() => form.value.planId, (planId) => {
+  if (planId && form.value.autoCreateMikroTik && form.value.fullName && !form.value.mikroTikUsername) {
+    form.value.mikroTikUsername = generateUsername(form.value.fullName)
+    form.value.mikroTikPassword = generatePassword()
+  }
+})
+
+function regenerateCredentials() {
+  if (form.value.fullName) {
+    form.value.mikroTikUsername = generateUsername(form.value.fullName)
+    form.value.mikroTikPassword = generatePassword()
+    toast.success('تم إنشاء بيانات MikroTik جديدة')
+  } else {
+    toast.error('الرجاء إدخال اسم المشترك أولاً')
+  }
+}
 
 function validate(): boolean {
   clearErrors()
@@ -51,7 +103,7 @@ function validate(): boolean {
   if (form.value.ipAddress && !ipRegex.test(form.value.ipAddress)) errors.value.ipAddress = 'صيغة IP غير صحيحة (مثال: 192.168.1.100)'
 
   if (!isEdit.value) {
-    if (form.value.mikroTikUsername.trim() && !form.value.mikroTikPassword) {
+    if (!form.value.autoCreateMikroTik && form.value.mikroTikUsername.trim() && !form.value.mikroTikPassword) {
       errors.value.mikroTikPassword = 'كلمة مرور MikroTik مطلوبة عند تحديد اسم المستخدم'
     }
 
@@ -85,16 +137,22 @@ async function handleSubmit() {
       })
       toast.success('تم تحديث المشترك بنجاح')
     } else {
-      await subscribersStore.createSubscriber({
+      const command: CreateSubscriberCommand = {
         fullName: sanitize(form.value.fullName),
         email: sanitize(form.value.email),
         phoneNumber: sanitize(form.value.phoneNumber),
-        nationalId: form.value.nationalId ? sanitize(form.value.nationalId) : undefined,
+        nationalId: form.value.nationalId ? sanitize(form.value.nationalId) : null,
         address: sanitize(form.value.address),
-        planId: form.value.planId ? form.value.planId : undefined,
-        pppUsername: form.value.mikroTikUsername ? sanitize(form.value.mikroTikUsername) : undefined,
-        pppPassword: form.value.mikroTikPassword ? form.value.mikroTikPassword : undefined,
-      } as any)
+        macAddress: form.value.macAddress ? sanitize(form.value.macAddress) : null,
+        ipAddress: form.value.ipAddress ? sanitize(form.value.ipAddress) : null,
+        planId: form.value.planId || null,
+        startDate: form.value.planId ? form.value.startDate : null,
+        autoRenew: form.value.autoRenew,
+        autoCreateMikroTik: form.value.autoCreateMikroTik && !!form.value.planId,
+        pppUsername: !form.value.autoCreateMikroTik && form.value.mikroTikUsername ? sanitize(form.value.mikroTikUsername) : null,
+        pppPassword: !form.value.autoCreateMikroTik && form.value.mikroTikPassword ? form.value.mikroTikPassword : null,
+      }
+      await subscribersStore.createSubscriber(command)
       toast.success('تم إنشاء المشترك بنجاح')
     }
     router.push('/admin/subscribers')
@@ -175,20 +233,6 @@ onMounted(async () => {
           </div>
         </div>
 
-        <!-- MikroTik PPPoE Credentials (new subscriber only) -->
-        <div v-if="!isEdit" class="pt-6 border-t border-soft-beige">
-          <h3 class="text-lg font-semibold text-jazan-green mb-2">بيانات MikroTik (PPPoE) <span class="text-sm font-normal text-light-gray">— اختياري</span></h3>
-          <p class="text-sm text-light-gray mb-4">بيانات الاتصال بالراوتر — يمكن إضافتها لاحقاً</p>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <FormField label="اسم مستخدم MikroTik" :error="errors.mikroTikUsername">
-              <input v-model="form.mikroTikUsername" type="text" class="w-full px-4 py-2 bg-soft-beige-light border border-sandy-brown/30 rounded-lg focus:ring-2 focus:ring-jazan-green focus:border-jazan-green font-mono" placeholder="pppoe_user" />
-            </FormField>
-            <FormField label="كلمة مرور MikroTik" :error="errors.mikroTikPassword">
-              <input v-model="form.mikroTikPassword" type="password" class="w-full px-4 py-2 bg-soft-beige-light border border-sandy-brown/30 rounded-lg focus:ring-2 focus:ring-jazan-green focus:border-jazan-green" />
-            </FormField>
-          </div>
-        </div>
-
         <!-- Subscription Details (new subscriber only) -->
         <div v-if="!isEdit" class="pt-6 border-t border-soft-beige">
           <h3 class="text-lg font-semibold text-jazan-green mb-4">تفاصيل الاشتراك</h3>
@@ -201,7 +245,7 @@ onMounted(async () => {
                 </option>
               </select>
             </FormField>
-            <FormField label="تاريخ البداية" required>
+            <FormField label="تاريخ البداية">
               <input v-model="form.startDate" type="date" class="w-full px-4 py-2 bg-soft-beige-light border border-sandy-brown/30 rounded-lg focus:ring-2 focus:ring-jazan-green focus:border-jazan-green" />
             </FormField>
           </div>
@@ -209,6 +253,61 @@ onMounted(async () => {
             <input v-model="form.autoRenew" type="checkbox" class="h-4 w-4 text-jazan-green focus:ring-jazan-green border-sandy-brown rounded" />
             <span class="mr-2 text-sm text-charcoal">تفعيل التجديد التلقائي</span>
           </label>
+        </div>
+
+        <!-- MikroTik PPPoE Credentials (new subscriber only, when plan selected) -->
+        <div v-if="showMikroTikSection" class="pt-6 border-t border-soft-beige">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="text-lg font-semibold text-jazan-green">بيانات MikroTik (PPPoE)</h3>
+              <p class="text-sm text-light-gray">سيتم إنشاء حساب PPPoE وربطه بالباقة المحددة على جهاز MikroTik</p>
+            </div>
+            <label class="flex items-center gap-2">
+              <input v-model="form.autoCreateMikroTik" type="checkbox" class="h-4 w-4 text-jazan-green focus:ring-jazan-green border-sandy-brown rounded" />
+              <span class="text-sm text-charcoal">إنشاء تلقائي</span>
+            </label>
+          </div>
+
+          <!-- Auto-create info box -->
+          <div v-if="form.autoCreateMikroTik" class="bg-teal/10 border border-teal/30 rounded-lg p-4 mb-4">
+            <div class="flex items-start gap-3">
+              <svg class="h-5 w-5 text-teal flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div class="flex-1">
+                <p class="text-sm text-charcoal font-medium">سيتم إنشاء بيانات MikroTik تلقائياً</p>
+                <p class="text-xs text-light-gray mt-1">
+                  سيتم إنشاء اسم مستخدم وكلمة مرور تلقائياً وربط الحساب بباقة 
+                  <strong class="text-jazan-green">{{ selectedPlan?.name }}</strong>
+                  ({{ selectedPlan?.mikroTikProfileName }})
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Manual credentials entry -->
+          <div v-else>
+            <div class="bg-warning-yellow/10 border border-warning-yellow/30 rounded-lg p-3 mb-4">
+              <p class="text-sm text-golden-sand-dark">
+                <strong>وضع يدوي:</strong> أدخل بيانات MikroTik يدوياً أو اتركها فارغة لإضافتها لاحقاً.
+              </p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <FormField label="اسم مستخدم MikroTik" :error="errors.mikroTikUsername">
+                <div class="flex gap-2">
+                  <input v-model="form.mikroTikUsername" type="text" class="flex-1 px-4 py-2 bg-soft-beige-light border border-sandy-brown/30 rounded-lg focus:ring-2 focus:ring-jazan-green focus:border-jazan-green font-mono" placeholder="pppoe_user" />
+                  <button type="button" @click="regenerateCredentials" class="px-3 py-2 bg-coastal-blue/10 text-coastal-blue rounded-lg hover:bg-coastal-blue/20 transition-colors" title="إنشاء تلقائي">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                  </button>
+                </div>
+              </FormField>
+              <FormField label="كلمة مرور MikroTik" :error="errors.mikroTikPassword">
+                <input v-model="form.mikroTikPassword" type="password" class="w-full px-4 py-2 bg-soft-beige-light border border-sandy-brown/30 rounded-lg focus:ring-2 focus:ring-jazan-green focus:border-jazan-green" />
+              </FormField>
+            </div>
+          </div>
         </div>
 
         <!-- System Account Creation (new subscriber only) -->

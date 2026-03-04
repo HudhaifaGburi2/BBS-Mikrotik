@@ -134,18 +134,19 @@ export interface CreateSubscriberCommand {
   fullName: string
   email: string
   phoneNumber: string
-  nationalId: string | null
+  nationalId?: string | null
   address: string
-  macAddress: string | null
-  ipAddress: string | null
-  planId: string
-  startDate: string
-  autoRenew: boolean
-  mikroTikUsername: string
-  mikroTikPassword: string
-  createSystemAccount: boolean
-  systemUsername: string | null
-  systemPassword: string | null
+  macAddress?: string | null
+  ipAddress?: string | null
+  planId?: string | null
+  startDate?: string | null
+  autoRenew?: boolean
+  pppUsername?: string | null
+  pppPassword?: string | null
+  autoCreateMikroTik?: boolean
+  createSystemAccount?: boolean
+  systemUsername?: string | null
+  systemPassword?: string | null
 }
 
 export interface UpdateSubscriberCommand {
