@@ -51,13 +51,38 @@ const sortedSessions = computed(() => {
   })
 })
 
-// Get usage percentage for progress bar (relative to top user)
+// Get usage percentage for progress bar (based on data limit if available, otherwise relative to top user)
 function getUsagePercent(session: ActiveSession): number {
+  const sessionTotal = (session.bytesIn || 0) + (session.bytesOut || 0)
+  
+  // If user has a data limit, calculate percentage of limit used
+  if (session.limitBytesIn && session.limitBytesIn > 0) {
+    return Math.min(100, Math.round((sessionTotal / session.limitBytesIn) * 100))
+  }
+  
+  // Otherwise, calculate relative to top user
   if (sessions.value.length === 0) return 0
   const maxTotal = Math.max(...sessions.value.map(s => (s.bytesIn || 0) + (s.bytesOut || 0)))
   if (maxTotal === 0) return 0
-  const sessionTotal = (session.bytesIn || 0) + (session.bytesOut || 0)
   return Math.round((sessionTotal / maxTotal) * 100)
+}
+
+// Check if user has a data limit
+function hasDataLimit(session: ActiveSession): boolean {
+  return (session.limitBytesIn != null && session.limitBytesIn > 0) || 
+         (session.limitBytesOut != null && session.limitBytesOut > 0)
+}
+
+// Get remaining bytes (limit - used)
+function getRemainingBytes(session: ActiveSession): number {
+  const used = (session.bytesIn || 0) + (session.bytesOut || 0)
+  const limit = session.limitBytesIn || session.limitBytesOut || 0
+  return Math.max(0, limit - used)
+}
+
+// Get data limit (use limitBytesIn as the total limit)
+function getDataLimit(session: ActiveSession): number {
+  return session.limitBytesIn || session.limitBytesOut || 0
 }
 
 // Format uptime for display
@@ -300,7 +325,7 @@ onUnmounted(() => {
 
               <!-- Data Usage -->
               <div class="flex-1">
-                <div class="grid grid-cols-3 gap-4 mb-2">
+                <div class="grid gap-4 mb-2" :class="hasDataLimit(s) ? 'grid-cols-4' : 'grid-cols-3'">
                   <div class="text-center">
                     <p class="text-xs text-light-gray mb-1">تحميل ↓</p>
                     <p class="font-bold text-jazan-green">{{ formatBytes(s.bytesIn || 0) }}</p>
@@ -313,11 +338,25 @@ onUnmounted(() => {
                     <p class="text-xs text-light-gray mb-1">الإجمالي</p>
                     <p class="font-bold text-golden-sand-dark">{{ formatBytes((s.bytesIn || 0) + (s.bytesOut || 0)) }}</p>
                   </div>
+                  <div v-if="hasDataLimit(s)" class="text-center">
+                    <p class="text-xs text-light-gray mb-1">المتبقي</p>
+                    <p class="font-bold" :class="getRemainingBytes(s) > 0 ? 'text-coastal-blue' : 'text-red-coral'">
+                      {{ formatBytes(getRemainingBytes(s)) }}
+                    </p>
+                  </div>
+                </div>
+                <!-- Data Limit Info -->
+                <div v-if="hasDataLimit(s)" class="flex items-center justify-between text-xs mb-1">
+                  <span class="text-light-gray">حصة البيانات: {{ formatBytes(getDataLimit(s)) }}</span>
+                  <span :class="getUsagePercent(s) >= 90 ? 'text-red-coral' : getUsagePercent(s) >= 70 ? 'text-warning-yellow' : 'text-jazan-green'">
+                    {{ getUsagePercent(s) }}% مستهلك
+                  </span>
                 </div>
                 <!-- Usage Progress Bar -->
                 <div class="w-full bg-gray-200 rounded-full h-1.5">
                   <div 
-                    class="h-1.5 rounded-full bg-gradient-to-r from-jazan-green to-teal transition-all duration-300"
+                    class="h-1.5 rounded-full transition-all duration-300"
+                    :class="hasDataLimit(s) ? (getUsagePercent(s) >= 90 ? 'bg-red-coral' : getUsagePercent(s) >= 70 ? 'bg-warning-yellow' : 'bg-jazan-green') : 'bg-gradient-to-r from-jazan-green to-teal'"
                     :style="{ width: getUsagePercent(s) + '%' }"
                   ></div>
                 </div>

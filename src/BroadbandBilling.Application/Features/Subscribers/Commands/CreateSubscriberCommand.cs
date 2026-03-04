@@ -175,8 +175,8 @@ public class CreateSubscriberCommandHandler : IRequestHandler<CreateSubscriberCo
                     // Ensure profile exists on MikroTik before adding user
                     await EnsureProfileExistsOnMikroTik(plan, cancellationToken);
                     
-                    // Add PPPoE user to MikroTik
-                    await SyncPppoeAccountWithMikroTik(pppoeAccount, cancellationToken);
+                    // Add PPPoE user to MikroTik with data limit from plan
+                    await SyncPppoeAccountWithMikroTik(pppoeAccount, plan, cancellationToken);
                     
                     _logger.LogInformation("MikroTik sync completed for PPPoE account {Username}", pppoeAccount.Username);
                 }
@@ -282,17 +282,26 @@ public class CreateSubscriberCommandHandler : IRequestHandler<CreateSubscriberCo
         }
     }
 
-    private async Task SyncPppoeAccountWithMikroTik(PppoeAccount pppoeAccount, CancellationToken cancellationToken)
+    private async Task SyncPppoeAccountWithMikroTik(PppoeAccount pppoeAccount, Plan? plan, CancellationToken cancellationToken)
     {
         try
         {
+            // Calculate data limit in bytes from plan's DataLimitGB
+            long? limitBytesTotal = null;
+            if (plan != null && plan.DataLimitGB > 0)
+            {
+                limitBytesTotal = (long)plan.DataLimitGB * 1024 * 1024 * 1024;
+            }
+            
             // Use empty connection request - MikroTikService will use appsettings.json defaults
             var addRequest = new AddPppUserRequest
             {
                 PppUsername = pppoeAccount.Username,
                 PppPassword = pppoeAccount.Password,
                 Profile = pppoeAccount.ProfileName,
-                Service = "pppoe"
+                Service = "pppoe",
+                LimitBytesTotal = limitBytesTotal,
+                Comment = plan != null ? $"Plan: {plan.Name}" : null
             };
 
             var result = await _mikroTikService.AddPppUserAsync(addRequest, cancellationToken);

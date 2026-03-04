@@ -106,6 +106,21 @@ public class MikroTikService : IMikroTikService
                     Profile = request.Profile ?? "default",
                     Service = request.Service ?? "pppoe"
                 };
+                
+                // Set data limit if provided (convert to int for MikroTik)
+                if (request.LimitBytesTotal.HasValue && request.LimitBytesTotal.Value > 0)
+                {
+                    // MikroTik uses limit-bytes-in and limit-bytes-out
+                    // We set both to the same value for total limit
+                    newUser.LimitBytesIn = (int)Math.Min(request.LimitBytesTotal.Value, int.MaxValue);
+                    newUser.LimitBytesOut = (int)Math.Min(request.LimitBytesTotal.Value, int.MaxValue);
+                }
+                
+                // Set comment if provided
+                if (!string.IsNullOrEmpty(request.Comment))
+                {
+                    newUser.Comment = request.Comment;
+                }
 
                 connection.Save(newUser);
 

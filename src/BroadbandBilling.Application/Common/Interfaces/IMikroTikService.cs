@@ -53,6 +53,8 @@ public record AddPppUserRequest : MikroTikConnectionRequest
     public required string PppPassword { get; init; }
     public string? Profile { get; init; }
     public string? Service { get; init; }
+    public long? LimitBytesTotal { get; init; }
+    public string? Comment { get; init; }
 }
 
 public record DeletePppUserRequest : MikroTikConnectionRequest
