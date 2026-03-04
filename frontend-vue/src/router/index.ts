@@ -62,6 +62,7 @@ const routes: RouteRecordRaw[] = [
       { path: 'invoices', name: 'client-invoices', component: () => import('@/views/client/InvoicesView.vue') },
       { path: 'plans', name: 'client-plans', component: () => import('@/views/client/PlansView.vue') },
       { path: 'payment', name: 'client-payment', component: () => import('@/views/client/PaymentView.vue') },
+      { path: 'payment/result', name: 'client-payment-result', component: () => import('@/views/client/PaymentResultView.vue') },
       { path: 'usage', name: 'client-usage', component: () => import('@/views/client/UsageView.vue') },
     ],
   },
@@ -83,12 +84,19 @@ router.beforeEach(async (to) => {
 
   // If route requires auth
   if (to.meta.requiresAuth) {
-    // Check if user is authenticated (from localStorage)
-    if (!auth.isAuthenticated) {
-      // No persisted state, try to restore session from API
-      const restored = await auth.checkSession()
-      if (!restored) {
-        return { name: 'login', query: { redirect: to.fullPath } }
+    // Always validate session with backend (checkSession handles caching)
+    const isValid = await auth.checkSession()
+    if (!isValid) {
+      return { name: 'login', query: { redirect: to.fullPath } }
+    }
+
+    // Role-based access control (after session is validated)
+    if (to.meta.role) {
+      if (to.meta.role === 'Admin' && !auth.isAdmin) {
+        return '/client/dashboard'
+      }
+      if (to.meta.role === 'Subscriber' && !auth.isSubscriber) {
+        return '/admin/dashboard'
       }
     }
   }
@@ -96,16 +104,6 @@ router.beforeEach(async (to) => {
   // If route is guest-only and user is authenticated
   if (to.meta.guest && auth.isAuthenticated) {
     return auth.isAdmin ? '/admin/dashboard' : '/client/dashboard'
-  }
-
-  // Role-based access control
-  if (to.meta.role) {
-    if (to.meta.role === 'Admin' && !auth.isAdmin) {
-      return '/client/dashboard'
-    }
-    if (to.meta.role === 'Subscriber' && !auth.isSubscriber) {
-      return '/admin/dashboard'
-    }
   }
 })
 

@@ -196,6 +196,7 @@ export interface Plan {
   speedMbps: number
   dataLimitGB: number
   billingCycleDays: number
+  billingCycleHours: number | null
   isActive: boolean
   mikroTikProfileName: string
 }
@@ -208,6 +209,7 @@ export interface CreatePlanCommand {
   speedMbps: number
   dataLimitGB: number
   billingCycleDays: number
+  billingCycleHours: number | null
   mikroTikProfileName: string
 }
 
@@ -218,6 +220,7 @@ export interface UpdatePlanDto {
   currency: string
   speedMbps: number
   dataLimitGB: number
+  billingCycleHours: number | null
 }
 
 // ============ Invoice Types ============

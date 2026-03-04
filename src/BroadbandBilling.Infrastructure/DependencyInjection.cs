@@ -37,6 +37,10 @@ public static class DependencyInjection
         // Configure MikroTik settings from appsettings.json
         services.Configure<MikroTikSettings>(configuration.GetSection("MikroTik"));
         services.AddScoped<IMikroTikService, MikroTikService>();
+
+        // Configure Geidea payment gateway
+        services.Configure<GeideaSettings>(configuration.GetSection("Geidea"));
+        services.AddHttpClient<IGeideaPaymentService, GeideaPaymentService>();
         services.AddScoped<ISubscriptionService, SubscriptionService>();
         services.AddScoped<IPlanService, PlanService>();
         services.AddScoped<IPaymentService, PaymentService>();
@@ -48,6 +52,7 @@ public static class DependencyInjection
         services.AddScoped<BillingCycleJob>();
         services.AddScoped<SuspendExpiredSubscriptionsJob>();
         services.AddScoped<UsageSyncJob>();
+        services.AddScoped<DataUsageCheckJob>();
 
         /*var hangfireConnectionString = configuration.GetConnectionString("HangfireConnection") ?? connectionString;
 

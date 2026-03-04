@@ -24,6 +24,7 @@ const form = ref({
   speedMbps: 0,
   dataLimitGB: 0,
   billingCycleDays: 30,
+  billingCycleHours: 0,
   mikroTikProfileName: '',
 })
 
@@ -32,7 +33,8 @@ function validate(): boolean {
   if (!form.value.name.trim()) errors.value.name = 'اسم الباقة مطلوب'
   if (form.value.price <= 0) errors.value.price = 'السعر يجب أن يكون أكبر من 0'
   if (form.value.speedMbps <= 0) errors.value.speedMbps = 'السرعة يجب أن تكون أكبر من 0'
-  if (form.value.billingCycleDays <= 0) errors.value.billingCycleDays = 'دورة الفوترة يجب أن تكون يوم واحد على الأقل'
+  const totalHours = (form.value.billingCycleDays * 24) + (form.value.billingCycleHours || 0)
+  if (totalHours <= 0) errors.value.billingCycleDays = 'دورة الفوترة يجب أن تكون ساعة واحدة على الأقل'
   if (!isEdit.value && !form.value.mikroTikProfileName.trim()) errors.value.mikroTikProfileName = 'اسم بروفايل MikroTik مطلوب'
   return Object.keys(errors.value).length === 0
 }
@@ -53,6 +55,7 @@ async function handleSubmit() {
         currency: form.value.currency,
         speedMbps: form.value.speedMbps,
         dataLimitGB: form.value.dataLimitGB,
+        billingCycleHours: form.value.billingCycleHours || null,
       })
       toast.success('تم تحديث الباقة بنجاح')
     } else {
@@ -64,6 +67,7 @@ async function handleSubmit() {
         speedMbps: form.value.speedMbps,
         dataLimitGB: form.value.dataLimitGB,
         billingCycleDays: form.value.billingCycleDays,
+        billingCycleHours: form.value.billingCycleHours || null,
         mikroTikProfileName: sanitize(form.value.mikroTikProfileName),
       })
       toast.success('تم إنشاء الباقة بنجاح')
@@ -91,6 +95,7 @@ onMounted(async () => {
         form.value.speedMbps = plan.speedMbps
         form.value.dataLimitGB = plan.dataLimitGB
         form.value.billingCycleDays = plan.billingCycleDays
+        form.value.billingCycleHours = plan.billingCycleHours || 0
         form.value.mikroTikProfileName = plan.mikroTikProfileName
       }
     } finally {
@@ -128,7 +133,11 @@ onMounted(async () => {
             <input v-model.number="form.dataLimitGB" type="number" min="0" class="w-full px-4 py-2 bg-soft-beige-light border border-sandy-brown/30 rounded-lg focus:ring-2 focus:ring-jazan-green focus:border-jazan-green" />
           </FormField>
           <FormField label="دورة الفوترة (أيام)" :error="errors.billingCycleDays" required>
-            <input v-model.number="form.billingCycleDays" type="number" min="1" max="365" class="w-full px-4 py-2 bg-soft-beige-light border border-sandy-brown/30 rounded-lg focus:ring-2 focus:ring-jazan-green focus:border-jazan-green" />
+            <input v-model.number="form.billingCycleDays" type="number" min="0" max="365" class="w-full px-4 py-2 bg-soft-beige-light border border-sandy-brown/30 rounded-lg focus:ring-2 focus:ring-jazan-green focus:border-jazan-green" />
+          </FormField>
+          <FormField label="ساعات إضافية">
+            <input v-model.number="form.billingCycleHours" type="number" min="0" max="23" class="w-full px-4 py-2 bg-soft-beige-light border border-sandy-brown/30 rounded-lg focus:ring-2 focus:ring-jazan-green focus:border-jazan-green" />
+            <p class="text-xs text-light-gray mt-1">إجمالي المدة: {{ form.billingCycleDays }} يوم و {{ form.billingCycleHours || 0 }} ساعة</p>
           </FormField>
           <FormField label="اسم بروفايل MikroTik" :error="errors.mikroTikProfileName" :required="!isEdit">
             <input v-model="form.mikroTikProfileName" type="text" class="w-full px-4 py-2 bg-soft-beige-light border border-sandy-brown/30 rounded-lg focus:ring-2 focus:ring-jazan-green focus:border-jazan-green" />

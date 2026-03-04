@@ -48,6 +48,12 @@ http.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry) {
       // Don't retry auth endpoints - let the router guard handle auth flow
       if (originalRequest.url?.includes('/auth/')) {
+        // Clear auth state for any 401 on auth endpoints (except login)
+        if (!originalRequest.url?.includes('/login')) {
+          const { useAuthStore } = await import('@/stores/auth')
+          const authStore = useAuthStore()
+          authStore.clearUser()
+        }
         return Promise.reject(error)
       }
 
@@ -67,13 +73,17 @@ http.interceptors.response.use(
         return http(originalRequest)
       } catch (refreshError) {
         processQueue(refreshError)
-        // Clear auth state without page reload
+        // Clear auth state completely
         const { useAuthStore } = await import('@/stores/auth')
         const authStore = useAuthStore()
         authStore.clearUser()
         // Use Vue Router for navigation instead of hard reload
         const { default: router } = await import('@/router')
-        router.push({ name: 'login', query: { redirect: window.location.pathname } })
+        const currentPath = window.location.pathname
+        // Only redirect if not already on login page
+        if (currentPath !== '/' && !currentPath.includes('/login')) {
+          router.push({ name: 'login', query: { redirect: currentPath } })
+        }
         return Promise.reject(refreshError)
       } finally {
         isRefreshing = false

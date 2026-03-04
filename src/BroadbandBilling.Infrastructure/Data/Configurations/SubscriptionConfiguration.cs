@@ -33,6 +33,37 @@ public class SubscriptionConfiguration : IEntityTypeConfiguration<Subscription>
             .IsRequired()
             .HasConversion<string>();
 
+        builder.Property(s => s.Amount)
+            .HasPrecision(18, 2);
+
+        builder.Property(s => s.GatewayPaymentId)
+            .HasMaxLength(500);
+
+        builder.Property(s => s.IsPaid)
+            .IsRequired()
+            .HasDefaultValue(false);
+
+        builder.Property(s => s.PaidAt);
+
+        builder.Property(s => s.MikroTikSynced)
+            .IsRequired()
+            .HasDefaultValue(false);
+
+        builder.Property(s => s.MikroTikSyncedAt);
+
+        builder.Property(s => s.MikroTikSyncError)
+            .HasMaxLength(1000);
+
+        builder.Property(s => s.DataUsedBytes)
+            .IsRequired()
+            .HasDefaultValue(0L);
+
+        builder.Property(s => s.DataLimitExceeded)
+            .IsRequired()
+            .HasDefaultValue(false);
+
+        builder.Property(s => s.DataLimitExceededAt);
+
         builder.Property(s => s.ActivatedAt);
 
         builder.Property(s => s.SuspendedAt);

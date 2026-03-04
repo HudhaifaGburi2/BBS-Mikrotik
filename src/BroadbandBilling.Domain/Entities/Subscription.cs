@@ -12,6 +12,16 @@ public class Subscription : IEntity
     public Guid PlanId { get; private set; }
     public DateRange BillingPeriod { get; private set; }
     public SubscriptionStatus Status { get; private set; }
+    public decimal Amount { get; private set; }
+    public string? GatewayPaymentId { get; private set; }
+    public bool IsPaid { get; private set; }
+    public DateTime? PaidAt { get; private set; }
+    public bool MikroTikSynced { get; private set; }
+    public DateTime? MikroTikSyncedAt { get; private set; }
+    public string? MikroTikSyncError { get; private set; }
+    public long DataUsedBytes { get; private set; }
+    public bool DataLimitExceeded { get; private set; }
+    public DateTime? DataLimitExceededAt { get; private set; }
     public DateTime? ActivatedAt { get; private set; }
     public DateTime? SuspendedAt { get; private set; }
     public DateTime? CancelledAt { get; private set; }
@@ -21,28 +31,36 @@ public class Subscription : IEntity
 
     public Subscriber Subscriber { get; private set; }
     public Plan Plan { get; private set; }
+    public ICollection<PaymentTransaction> PaymentTransactions { get; private set; }
 
     private Subscription()
     {
         BillingPeriod = null!;
         Subscriber = null!;
         Plan = null!;
+        PaymentTransactions = new List<PaymentTransaction>();
     }
 
-    private Subscription(Guid subscriberId, Guid planId, DateTime startDate, int billingCycleDays)
+    private Subscription(Guid subscriberId, Guid planId, DateTime startDate, int billingCycleDays, decimal amount)
     {
         Id = Guid.NewGuid();
         SubscriberId = subscriberId;
         PlanId = planId;
         Subscriber = null!;
         Plan = null!;
+        PaymentTransactions = new List<PaymentTransaction>();
         BillingPeriod = DateRange.Create(startDate, startDate.AddDays(billingCycleDays - 1));
         Status = SubscriptionStatus.PendingActivation;
+        Amount = amount;
+        IsPaid = false;
+        MikroTikSynced = false;
+        DataUsedBytes = 0;
+        DataLimitExceeded = false;
         CreatedAt = DateTime.UtcNow;
     }
 
     public static Subscription Create(Guid subscriberId, Guid planId, 
-        DateTime startDate, int billingCycleDays)
+        DateTime startDate, int billingCycleDays, decimal amount = 0)
     {
         if (subscriberId == Guid.Empty)
             throw new ArgumentException("Subscriber ID is required", nameof(subscriberId));
@@ -53,7 +71,32 @@ public class Subscription : IEntity
         if (billingCycleDays <= 0)
             throw new ArgumentException("Billing cycle days must be positive", nameof(billingCycleDays));
 
-        return new Subscription(subscriberId, planId, startDate, billingCycleDays);
+        return new Subscription(subscriberId, planId, startDate, billingCycleDays, amount);
+    }
+
+    public void SetGatewayPaymentId(string gatewayPaymentId)
+    {
+        GatewayPaymentId = gatewayPaymentId;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void MarkAsPaid(string? gatewayPaymentId = null)
+    {
+        IsPaid = true;
+        PaidAt = DateTime.UtcNow;
+        if (!string.IsNullOrEmpty(gatewayPaymentId))
+        {
+            GatewayPaymentId = gatewayPaymentId;
+        }
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void SetMikroTikSynced(bool synced, string? error = null)
+    {
+        MikroTikSynced = synced;
+        MikroTikSyncedAt = synced ? DateTime.UtcNow : null;
+        MikroTikSyncError = error;
+        UpdatedAt = DateTime.UtcNow;
     }
 
     public void Activate()
@@ -141,5 +184,29 @@ public class Subscription : IEntity
     {
         return BillingPeriod.IsExpired(DateTime.UtcNow) && 
                Status != SubscriptionStatus.Cancelled;
+    }
+
+    public void UpdateDataUsage(long bytesUsed)
+    {
+        DataUsedBytes = bytesUsed;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void MarkDataLimitExceeded()
+    {
+        DataLimitExceeded = true;
+        DataLimitExceededAt = DateTime.UtcNow;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public double GetDataUsedGB()
+    {
+        return DataUsedBytes / (1024.0 * 1024.0 * 1024.0);
+    }
+
+    public bool HasExceededDataLimit(int dataLimitGB)
+    {
+        if (dataLimitGB <= 0) return false;
+        return GetDataUsedGB() >= dataLimitGB;
     }
 }

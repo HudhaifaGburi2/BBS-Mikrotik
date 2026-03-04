@@ -4,7 +4,7 @@ import { usePlansStore } from '@/stores/plans'
 import { useSubscriptionsStore } from '@/stores/subscriptions'
 import { useToastStore } from '@/stores/toast'
 import { useFormatters } from '@/composables/useFormatters'
-import { apiGet } from '@/services/http'
+import { apiGet, apiPost } from '@/services/http'
 import AppLoader from '@/components/AppLoader.vue'
 import type { Plan, Subscriber } from '@/types'
 
@@ -15,15 +15,14 @@ const { formatCurrency } = useFormatters()
 
 const selectedPlan = ref<Plan | null>(null)
 const showPaymentInfo = ref(false)
-const selectedMethod = ref('BankTransfer')
+const selectedMethod = ref('Card')
 const myProfile = ref<Subscriber | null>(null)
 const hasActiveSubscription = ref(false)
+const isProcessing = ref(false)
 
 const paymentChannels = [
+  { value: 'Card', label: 'بطاقة (مدى/Visa/MC)', icon: '💳', desc: 'ادفع عبر بطاقة مدى أو Visa أو MasterCard' },
   { value: 'BankTransfer', label: 'تحويل بنكي', icon: '🏦', desc: 'حوّل المبلغ إلى حساب الشركة البنكي' },
-  { value: 'Mada', label: 'مدى', icon: 'M', desc: 'ادفع عبر بطاقة مدى (قريباً)' },
-  { value: 'Visa', label: 'Visa', icon: 'V', desc: 'ادفع عبر بطاقة Visa (قريباً)' },
-  { value: 'MasterCard', label: 'MasterCard', icon: 'MC', desc: 'ادفع عبر بطاقة MasterCard (قريباً)' },
 ]
 
 function selectPlan(plan: Plan) {
@@ -42,24 +41,52 @@ function cancelSelection() {
 }
 
 async function confirmPurchase() {
-  if (!selectedPlan.value) return
+  if (!selectedPlan.value || !myProfile.value) return
   
-  // For bank transfer, just show confirmation - admin will activate manually
-  if (selectedMethod.value === 'BankTransfer') {
-    toast.success('تم إرسال طلب الاشتراك بنجاح! سيتم تفعيل اشتراكك بعد تأكيد الدفع من قبل المسؤول.')
-    showPaymentInfo.value = false
-    selectedPlan.value = null
-    return
+  isProcessing.value = true
+  
+  try {
+    const response = await apiPost<{
+      success: boolean
+      subscriptionId: string
+      transactionId: string
+      redirectUrl: string | null
+      error?: string
+    }>('/payments/create-session', {
+      planId: selectedPlan.value.id,
+      subscriberId: myProfile.value.id,
+      paymentMethod: selectedMethod.value
+    })
+
+    if (!response.success || response.data?.error) {
+      toast.error(response.data?.error || 'فشل في إنشاء جلسة الدفع')
+      return
+    }
+
+    if (selectedMethod.value === 'BankTransfer') {
+      toast.success('تم إرسال طلب الاشتراك بنجاح! سيتم تفعيل اشتراكك بعد تأكيد الدفع من قبل المسؤول.')
+      showPaymentInfo.value = false
+      selectedPlan.value = null
+      return
+    }
+
+    if (response.data?.redirectUrl) {
+      toast.info('جاري توجيهك لبوابة الدفع...')
+      window.location.href = response.data.redirectUrl
+    } else {
+      toast.error('لم يتم استلام رابط الدفع. الرجاء المحاولة مرة أخرى.')
+    }
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'حدث خطأ أثناء إنشاء جلسة الدفع'
+    toast.error(message)
+  } finally {
+    isProcessing.value = false
   }
-  
-  // For card payments (future implementation)
-  toast.info('بوابة الدفع الإلكتروني قيد التطوير. يرجى استخدام التحويل البنكي حالياً.')
 }
 
 onMounted(async () => {
   await plansStore.fetchPlans(true)
   
-  // Check if user has active subscription
   try {
     const [profileRes] = await Promise.all([
       apiGet<Subscriber>('/subscribers/me'),
@@ -68,7 +95,6 @@ onMounted(async () => {
     if (profileRes.data) {
       myProfile.value = profileRes.data
     }
-    // Check for active subscriptions
     hasActiveSubscription.value = subscriptionsStore.subscriptions.some(
       s => s.status === 'Active' || s.status === 'PendingActivation'
     )
@@ -146,21 +172,49 @@ onMounted(async () => {
 
       <!-- Card Payment Info -->
       <div v-else class="bg-soft-beige-light rounded-xl p-4 mb-6">
-        <h4 class="text-sm font-semibold text-coastal-blue mb-3">الدفع عبر {{ paymentChannels.find(c => c.value === selectedMethod)?.label }}</h4>
+        <h4 class="text-sm font-semibold text-coastal-blue mb-3">الدفع عبر البطاقة</h4>
         <div class="text-center py-4">
-          <svg class="mx-auto h-12 w-12 text-pale-olive mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-          </svg>
-          <p class="text-sm text-light-gray">سيتم توجيهك لبوابة الدفع الإلكتروني لإتمام العملية</p>
+          <div class="flex justify-center gap-4 mb-4">
+            <div class="bg-white rounded-lg p-2 shadow-sm">
+              <span class="text-2xl font-bold text-green-600">مدى</span>
+            </div>
+            <div class="bg-white rounded-lg p-2 shadow-sm">
+              <span class="text-2xl font-bold text-blue-600">VISA</span>
+            </div>
+            <div class="bg-white rounded-lg p-2 shadow-sm">
+              <span class="text-2xl font-bold text-orange-600">MC</span>
+            </div>
+          </div>
+          <p class="text-sm text-light-gray">سيتم توجيهك لبوابة الدفع الآمنة (Geidea) لإتمام العملية</p>
           <p class="text-xs text-light-gray mt-1">المبلغ: <strong class="text-jazan-green">{{ formatCurrency(selectedPlan.price) }}</strong></p>
+          <div class="mt-3 flex items-center justify-center gap-2 text-xs text-teal">
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+            <span>دفع آمن ومشفر - 3D Secure</span>
+          </div>
         </div>
       </div>
 
       <!-- Confirm Button -->
       <div class="flex items-center justify-between">
-        <button class="px-6 py-2 text-sm text-light-gray hover:text-charcoal transition-colors" @click="cancelSelection">إلغاء</button>
-        <button class="px-8 py-3 bg-jazan-green text-white rounded-xl hover:bg-jazan-green-dark transition-colors shadow-md font-medium" @click="confirmPurchase">
-          {{ selectedMethod === 'BankTransfer' ? 'تأكيد طلب الاشتراك' : 'ادفع الآن' }}
+        <button 
+          class="px-6 py-2 text-sm text-light-gray hover:text-charcoal transition-colors disabled:opacity-50" 
+          :disabled="isProcessing"
+          @click="cancelSelection"
+        >
+          إلغاء
+        </button>
+        <button 
+          class="px-8 py-3 bg-jazan-green text-white rounded-xl hover:bg-jazan-green-dark transition-colors shadow-md font-medium disabled:opacity-50 flex items-center gap-2" 
+          :disabled="isProcessing"
+          @click="confirmPurchase"
+        >
+          <svg v-if="isProcessing" class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          {{ isProcessing ? 'جاري المعالجة...' : (selectedMethod === 'BankTransfer' ? 'تأكيد طلب الاشتراك' : 'ادفع الآن') }}
         </button>
       </div>
     </div>

@@ -11,6 +11,7 @@ public class CreatePlanCommand
     public int SpeedMbps { get; set; }
     public int DataLimitGB { get; set; }
     public int BillingCycleDays { get; set; } = 30;
+    public int? BillingCycleHours { get; set; }
     public string MikroTikProfileName { get; set; } = string.Empty;
 }
 

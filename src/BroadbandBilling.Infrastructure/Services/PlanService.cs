@@ -71,7 +71,7 @@ public class PlanService : IPlanService
             return ApiResponse<PlanDto>.FailureResponse("Plan not found", $"Plan with ID {id} not found");
         }
 
-        plan.UpdateDetails(dto.Name, dto.Description, dto.Price, dto.SpeedMbps, dto.DataLimitGB, dto.Currency);
+        plan.UpdateDetails(dto.Name, dto.Description, dto.Price, dto.SpeedMbps, dto.DataLimitGB, dto.Currency, dto.BillingCycleHours);
         _unitOfWork.Plans.Update(plan);
         await _unitOfWork.CommitAsync(cancellationToken);
 

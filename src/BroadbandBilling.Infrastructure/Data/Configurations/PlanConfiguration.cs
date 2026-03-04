@@ -41,6 +41,8 @@ public class PlanConfiguration : IEntityTypeConfiguration<Plan>
         builder.Property(p => p.BillingCycleDays)
             .IsRequired();
 
+        builder.Property(p => p.BillingCycleHours);
+
         builder.Property(p => p.MikroTikProfileName)
             .IsRequired()
             .HasMaxLength(100);

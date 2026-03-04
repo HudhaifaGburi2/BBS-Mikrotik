@@ -11,6 +11,7 @@ public class PlanDto : BaseDto
     public int SpeedMbps { get; set; }
     public int DataLimitGB { get; set; }
     public int BillingCycleDays { get; set; }
+    public int? BillingCycleHours { get; set; }
     public bool IsActive { get; set; }
     public string MikroTikProfileName { get; set; } = string.Empty;
 }
@@ -24,6 +25,7 @@ public class CreatePlanDto
     public int SpeedMbps { get; set; }
     public int DataLimitGB { get; set; }
     public int BillingCycleDays { get; set; }
+    public int? BillingCycleHours { get; set; }
     public string MikroTikProfileName { get; set; } = string.Empty;
 }
 
@@ -35,4 +37,5 @@ public class UpdatePlanDto
     public string Currency { get; set; } = "USD";
     public int SpeedMbps { get; set; }
     public int DataLimitGB { get; set; }
+    public int? BillingCycleHours { get; set; }
 }

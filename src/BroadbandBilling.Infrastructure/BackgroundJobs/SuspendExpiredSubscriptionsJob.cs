@@ -1,4 +1,5 @@
 using BroadbandBilling.Application.Common.Interfaces;
+using BroadbandBilling.Application.Interfaces;
 using Microsoft.Extensions.Logging;
 
 namespace BroadbandBilling.Infrastructure.BackgroundJobs;
@@ -42,8 +43,21 @@ public class SuspendExpiredSubscriptionsJob
 
                     if (pppoeAccount != null && pppoeAccount.IsEnabled)
                     {
-                        // await _mikrotikService.DisablePppoeUserAsync(pppoeAccount.MikroTikDeviceId, pppoeAccount.Username);
-                        // Skip for now as DisablePppoeUserAsync not implemented
+                        // Deactivate user on MikroTik
+                        var deactivateResult = await _mikrotikService.DeactivateUserAsync(
+                            new DeletePppUserRequest { PppUsername = pppoeAccount.Username });
+                        
+                        if (deactivateResult.Success)
+                        {
+                            _logger.LogInformation("Deactivated MikroTik user {Username} for expired subscription",
+                                pppoeAccount.Username);
+                        }
+                        else
+                        {
+                            _logger.LogWarning("Failed to deactivate MikroTik user {Username}: {Error}",
+                                pppoeAccount.Username, deactivateResult.Message);
+                        }
+
                         pppoeAccount.Disable();
                         _unitOfWork.PppoeAccounts.Update(pppoeAccount);
                     }

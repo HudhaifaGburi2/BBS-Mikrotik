@@ -31,7 +31,8 @@ public class CreatePlanHandler
             command.DataLimitGB,
             command.BillingCycleDays,
             command.MikroTikProfileName,
-            command.Currency
+            command.Currency,
+            command.BillingCycleHours
         );
 
         await _unitOfWork.Plans.AddAsync(plan, cancellationToken);

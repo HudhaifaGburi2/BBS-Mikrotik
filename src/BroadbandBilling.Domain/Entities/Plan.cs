@@ -12,6 +12,7 @@ public class Plan : IEntity
     public int SpeedMbps { get; private set; }
     public int DataLimitGB { get; private set; }
     public int BillingCycleDays { get; private set; }
+    public int? BillingCycleHours { get; private set; }
     public bool IsActive { get; private set; }
     public string MikroTikProfileName { get; private set; }
     public DateTime CreatedAt { get; private set; }
@@ -26,7 +27,7 @@ public class Plan : IEntity
     }
 
     private Plan(string name, string description, Money price, int speedMbps, 
-        int dataLimitGB, int billingCycleDays, string mikroTikProfileName)
+        int dataLimitGB, int billingCycleDays, int? billingCycleHours, string mikroTikProfileName)
     {
         Id = Guid.NewGuid();
         Name = name ?? throw new ArgumentNullException(nameof(name));
@@ -34,7 +35,8 @@ public class Plan : IEntity
         Price = price ?? throw new ArgumentNullException(nameof(price));
         SpeedMbps = speedMbps > 0 ? speedMbps : throw new ArgumentException("Speed must be positive", nameof(speedMbps));
         DataLimitGB = dataLimitGB >= 0 ? dataLimitGB : throw new ArgumentException("Data limit cannot be negative", nameof(dataLimitGB));
-        BillingCycleDays = billingCycleDays > 0 ? billingCycleDays : throw new ArgumentException("Billing cycle must be positive", nameof(billingCycleDays));
+        BillingCycleDays = billingCycleDays >= 0 ? billingCycleDays : throw new ArgumentException("Billing cycle days cannot be negative", nameof(billingCycleDays));
+        BillingCycleHours = billingCycleHours;
         MikroTikProfileName = mikroTikProfileName ?? throw new ArgumentNullException(nameof(mikroTikProfileName));
         IsActive = true;
         CreatedAt = DateTime.UtcNow;
@@ -42,22 +44,30 @@ public class Plan : IEntity
 
     public static Plan Create(string name, string description, decimal price, 
         int speedMbps, int dataLimitGB, int billingCycleDays, 
-        string mikroTikProfileName, string currency = "USD")
+        string mikroTikProfileName, string currency = "USD", int? billingCycleHours = null)
     {
         return new Plan(name, description, Money.Create(price, currency), 
-            speedMbps, dataLimitGB, billingCycleDays, mikroTikProfileName);
+            speedMbps, dataLimitGB, billingCycleDays, billingCycleHours, mikroTikProfileName);
     }
 
     public void UpdateDetails(string name, string description, decimal price, 
-        int speedMbps, int dataLimitGB, string currency = "USD")
+        int speedMbps, int dataLimitGB, string currency = "USD", int? billingCycleHours = null)
     {
         Name = name ?? throw new ArgumentNullException(nameof(name));
         Description = description ?? string.Empty;
         Price = Money.Create(price, currency);
         SpeedMbps = speedMbps > 0 ? speedMbps : throw new ArgumentException("Speed must be positive");
         DataLimitGB = dataLimitGB >= 0 ? dataLimitGB : throw new ArgumentException("Data limit cannot be negative");
+        BillingCycleHours = billingCycleHours;
         UpdatedAt = DateTime.UtcNow;
     }
+
+    public int GetTotalBillingHours()
+    {
+        return (BillingCycleDays * 24) + (BillingCycleHours ?? 0);
+    }
+
+    public bool HasDataLimit() => DataLimitGB > 0;
 
     public void Activate()
     {

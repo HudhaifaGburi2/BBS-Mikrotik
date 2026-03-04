@@ -24,6 +24,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<MikroTikDevice> MikroTikDevices => Set<MikroTikDevice>();
     public DbSet<UsageLog> UsageLogs => Set<UsageLog>();
     public DbSet<LoginHistory> LoginHistory => Set<LoginHistory>();
+    public DbSet<PaymentTransaction> PaymentTransactions => Set<PaymentTransaction>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

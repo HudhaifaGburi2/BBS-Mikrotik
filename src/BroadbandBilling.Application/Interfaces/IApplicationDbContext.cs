@@ -16,6 +16,7 @@ public interface IApplicationDbContext
     DbSet<MikroTikDevice> MikroTikDevices { get; }
     DbSet<UsageLog> UsageLogs { get; }
     DbSet<LoginHistory> LoginHistory { get; }
+    DbSet<PaymentTransaction> PaymentTransactions { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

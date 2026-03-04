@@ -9,14 +9,15 @@ export const useAuthStore = defineStore('auth', () => {
   const user = ref<UserData | null>(null)
   const isLoading = ref(false)
   const initialized = ref(false)
+  const sessionValidated = ref(false)
 
-  const isAuthenticated = computed(() => user.value !== null)
-  const isAdmin = computed(() => user.value?.userType === 'Admin')
-  const isSubscriber = computed(() => user.value?.userType === 'Subscriber')
+  const isAuthenticated = computed(() => user.value !== null && sessionValidated.value)
+  const isAdmin = computed(() => user.value?.userType === 'Admin' && sessionValidated.value)
+  const isSubscriber = computed(() => user.value?.userType === 'Subscriber' && sessionValidated.value)
   const userType = computed(() => user.value?.userType ?? null)
   const fullName = computed(() => user.value?.fullName ?? '')
 
-  // Initialize from localStorage on store creation
+  // Initialize from localStorage on store creation (for UI display only, not auth)
   function initFromStorage() {
     if (initialized.value) return
     try {
@@ -25,6 +26,7 @@ export const useAuthStore = defineStore('auth', () => {
         const parsed = JSON.parse(stored)
         if (parsed && parsed.userType) {
           user.value = parsed
+          // Don't set sessionValidated - must be validated with backend
         }
       }
     } catch {
@@ -36,8 +38,9 @@ export const useAuthStore = defineStore('auth', () => {
   // Call init immediately
   initFromStorage()
 
-  function setUser(data: UserData) {
+  function setUser(data: UserData, validated = true) {
     user.value = data
+    sessionValidated.value = validated
     // Persist to localStorage
     try {
       localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(data))
@@ -48,6 +51,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   function clearUser() {
     user.value = null
+    sessionValidated.value = false
     localStorage.removeItem(AUTH_STORAGE_KEY)
   }
 
@@ -99,34 +103,41 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function checkSession(): Promise<boolean> {
-    // If we already have user data from localStorage, trust it
-    // The JWT cookie will be validated by the backend on actual API calls
-    if (user.value !== null) {
+    // If session already validated in this browser session, skip re-validation
+    if (sessionValidated.value && user.value !== null) {
       return true
     }
+
+    // Always validate JWT with backend - don't trust localStorage alone
     try {
       isLoading.value = true
       const res = await http.get<UserData>('/auth/me')
       if (res.data) {
-        setUser(res.data)
+        setUser(res.data, true)
         return true
       }
+      clearUser()
       return false
-    } catch (err: any) {
-      // Only clear if it's a 401 - other errors might be temporary
-      if (err.response?.status === 401) {
-        clearUser()
-      }
+    } catch (err: unknown) {
+      // Any error means session is invalid
+      clearUser()
       return false
     } finally {
       isLoading.value = false
     }
   }
 
+  // Force re-validation of session (e.g., after server restart)
+  async function validateSession(): Promise<boolean> {
+    sessionValidated.value = false
+    return checkSession()
+  }
+
   return {
     user,
     isLoading,
     initialized,
+    sessionValidated,
     isAuthenticated,
     isAdmin,
     isSubscriber,
@@ -135,6 +146,7 @@ export const useAuthStore = defineStore('auth', () => {
     login,
     logout,
     checkSession,
+    validateSession,
     setUser,
     clearUser,
     initFromStorage,
