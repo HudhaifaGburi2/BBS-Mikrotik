@@ -104,7 +104,8 @@ public class MikroTikService : IMikroTikService
                     Name = request.PppUsername,
                     Password = request.PppPassword,
                     Profile = request.Profile ?? "default",
-                    Service = request.Service ?? "pppoe"
+                    Service = request.Service ?? "pppoe",
+                    Disabled = request.Disabled // Set disabled state from request
                 };
                 
                 // Set data limit if provided (convert to int for MikroTik)

@@ -162,23 +162,26 @@ public class CreateSubscriberCommandHandler : IRequestHandler<CreateSubscriberCo
                     pppPassword,
                     plan.MikroTikProfileName
                 );
+                
+                // Disable the account initially - will be enabled after payment
+                pppoeAccount.Disable();
 
                 await _unitOfWork.PppoeAccounts.AddAsync(pppoeAccount, cancellationToken);
                 
                 // Update subscriber with MikroTik username for easy reference
                 subscriber.UpdateNetworkInfo(subscriber.MacAddress, subscriber.IpAddress, pppUsername);
 
-                // Sync with MikroTik synchronously to ensure user is created
-                // Use appsettings.json MikroTik settings (pass null to use defaults)
+                // Create PPPoE user on MikroTik but DISABLED (pending payment)
+                // The user will be enabled when payment is confirmed
                 try
                 {
                     // Ensure profile exists on MikroTik before adding user
                     await EnsureProfileExistsOnMikroTik(plan, cancellationToken);
                     
-                    // Add PPPoE user to MikroTik with data limit from plan
-                    await SyncPppoeAccountWithMikroTik(pppoeAccount, plan, cancellationToken);
+                    // Add PPPoE user to MikroTik as DISABLED (pending activation)
+                    await SyncPppoeAccountWithMikroTikDisabled(pppoeAccount, plan, cancellationToken);
                     
-                    _logger.LogInformation("MikroTik sync completed for PPPoE account {Username}", pppoeAccount.Username);
+                    _logger.LogInformation("MikroTik user created (disabled) for PPPoE account {Username} - pending payment activation", pppoeAccount.Username);
                 }
                 catch (Exception ex)
                 {
@@ -282,7 +285,7 @@ public class CreateSubscriberCommandHandler : IRequestHandler<CreateSubscriberCo
         }
     }
 
-    private async Task SyncPppoeAccountWithMikroTik(PppoeAccount pppoeAccount, Plan? plan, CancellationToken cancellationToken)
+    private async Task SyncPppoeAccountWithMikroTikDisabled(PppoeAccount pppoeAccount, Plan? plan, CancellationToken cancellationToken)
     {
         try
         {
@@ -301,7 +304,8 @@ public class CreateSubscriberCommandHandler : IRequestHandler<CreateSubscriberCo
                 Profile = pppoeAccount.ProfileName,
                 Service = "pppoe",
                 LimitBytesTotal = limitBytesTotal,
-                Comment = plan != null ? $"Plan: {plan.Name}" : null
+                Comment = plan != null ? $"Plan: {plan.Name} (Pending Activation)" : "Pending Activation",
+                Disabled = true // Create as disabled - will be enabled after payment
             };
 
             var result = await _mikroTikService.AddPppUserAsync(addRequest, cancellationToken);
@@ -309,7 +313,7 @@ public class CreateSubscriberCommandHandler : IRequestHandler<CreateSubscriberCo
             if (result.Success)
             {
                 pppoeAccount.MarkAsSynced();
-                _logger.LogInformation("Successfully synced PPPoE account {Username} with MikroTik", pppoeAccount.Username);
+                _logger.LogInformation("Successfully created disabled PPPoE account {Username} on MikroTik (pending activation)", pppoeAccount.Username);
             }
             else
             {

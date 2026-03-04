@@ -53,6 +53,30 @@ onMounted(async () => {
   <div>
     <h1 class="text-2xl font-bold text-coastal-blue mb-6">مرحباً، {{ auth.fullName }}</h1>
 
+    <!-- Pending Activation Banner -->
+    <div v-if="currentSub?.status === 'PendingActivation'" class="bg-golden-sand/10 border border-golden-sand rounded-xl p-4 mb-6">
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 rounded-full bg-golden-sand/20 flex items-center justify-center">
+          <svg class="w-6 h-6 text-golden-sand-dark" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <div class="flex-1">
+          <h3 class="text-lg font-bold text-golden-sand-dark">اشتراكك في انتظار التفعيل</h3>
+          <p class="text-sm text-charcoal">يرجى إتمام الدفع لتفعيل الاشتراك والوصول للإنترنت</p>
+        </div>
+        <router-link 
+          to="/client/payment" 
+          class="px-4 py-2 bg-golden-sand text-white rounded-lg hover:bg-golden-sand-dark transition-colors flex items-center gap-2"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+          </svg>
+          الدفع الآن
+        </router-link>
+      </div>
+    </div>
+
     <!-- Suspended/Quota Exceeded Alert Banner -->
     <div v-if="currentSub?.dataLimitExceeded" class="bg-red-100 border border-red-coral rounded-xl p-4 mb-6">
       <div class="flex items-center gap-3">

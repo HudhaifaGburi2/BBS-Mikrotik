@@ -41,6 +41,7 @@ const routes: RouteRecordRaw[] = [
       { path: 'invoices/:id', name: 'admin-invoice-detail', component: () => import('@/views/admin/InvoiceDetailView.vue') },
       { path: 'payments', name: 'admin-payments', component: () => import('@/views/admin/PaymentsView.vue') },
       { path: 'online-users', name: 'admin-online-users', component: () => import('@/views/admin/OnlineUsersView.vue') },
+      { path: 'pending-activations', name: 'admin-pending-activations', component: () => import('@/views/admin/PendingActivationsView.vue') },
       { path: 'reports', name: 'admin-reports', component: () => import('@/views/admin/ReportsView.vue') },
       { path: 'users', name: 'admin-users', component: () => import('@/views/admin/UsersView.vue') },
       { path: 'users/new', name: 'admin-user-create', component: () => import('@/views/admin/UserFormView.vue') },

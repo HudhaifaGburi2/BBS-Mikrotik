@@ -55,6 +55,7 @@ public record AddPppUserRequest : MikroTikConnectionRequest
     public string? Service { get; init; }
     public long? LimitBytesTotal { get; init; }
     public string? Comment { get; init; }
+    public bool Disabled { get; init; } = false;
 }
 
 public record DeletePppUserRequest : MikroTikConnectionRequest

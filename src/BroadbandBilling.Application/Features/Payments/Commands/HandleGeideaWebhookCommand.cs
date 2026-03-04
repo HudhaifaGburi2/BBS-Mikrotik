@@ -142,12 +142,12 @@ public class HandleGeideaWebhookCommandHandler : IRequestHandler<HandleGeideaWeb
         try
         {
             var pppoeAccount = await _dbContext.PppoeAccounts
-                .FirstOrDefaultAsync(p => p.SubscriberId == subscription.SubscriberId, cancellationToken);
+                .FirstOrDefaultAsync(p => p.SubscriptionId == subscription.Id, cancellationToken);
 
             if (pppoeAccount == null)
             {
-                _logger.LogWarning("No PPPoE account found for subscriber {SubscriberId}, skipping MikroTik activation",
-                    subscription.SubscriberId);
+                _logger.LogWarning("No PPPoE account found for subscription {SubscriptionId}, skipping MikroTik activation",
+                    subscription.Id);
                 subscription.SetMikroTikSynced(false, "No PPPoE account found");
                 await _unitOfWork.CommitAsync(cancellationToken);
                 return;
@@ -163,6 +163,25 @@ public class HandleGeideaWebhookCommandHandler : IRequestHandler<HandleGeideaWeb
                 return;
             }
 
+            // 1. Enable the PPP secret on MikroTik
+            var activateResult = await _mikroTikService.ActivateUserAsync(
+                new DeletePppUserRequest { PppUsername = pppoeAccount.Username },
+                cancellationToken
+            );
+
+            if (!activateResult.Success)
+            {
+                _logger.LogWarning("Failed to enable PPP user {Username} on MikroTik: {Error}",
+                    pppoeAccount.Username, activateResult.Message);
+            }
+
+            // 2. Reset usage counters on MikroTik
+            await _mikroTikService.ResetUserQuotaAsync(
+                new ResetUserQuotaRequest { PppUsername = pppoeAccount.Username },
+                cancellationToken
+            );
+
+            // 3. Update profile if needed
             var updateResult = await _mikroTikService.UpdateUserProfileAsync(
                 new UpdateProfileRequest
                 {
@@ -172,17 +191,32 @@ public class HandleGeideaWebhookCommandHandler : IRequestHandler<HandleGeideaWeb
                 cancellationToken
             );
 
-            if (updateResult.Success)
+            // 4. Update comment to remove "Pending Activation"
+            await _mikroTikService.UpdatePppUserAsync(
+                new UpdatePppUserRequest
+                {
+                    PppUsername = pppoeAccount.Username,
+                    Comment = $"Plan: {subscription.Plan?.Name}"
+                },
+                cancellationToken
+            );
+
+            // 5. Enable PPPoE account in database and reset usage
+            pppoeAccount.Enable();
+            pppoeAccount.MarkAsSynced();
+            subscription.ResetDataUsage();
+
+            if (updateResult.Success || activateResult.Success)
             {
                 subscription.SetMikroTikSynced(true);
-                _logger.LogInformation("MikroTik profile updated for user {Username} to {Profile}",
+                _logger.LogInformation("MikroTik activation completed for user {Username}, profile: {Profile}",
                     pppoeAccount.Username, profileName);
             }
             else
             {
-                subscription.SetMikroTikSynced(false, updateResult.Message);
-                _logger.LogWarning("Failed to update MikroTik profile for user {Username}: {Error}",
-                    pppoeAccount.Username, updateResult.Message);
+                subscription.SetMikroTikSynced(false, updateResult.Message ?? activateResult.Message);
+                _logger.LogWarning("Failed to fully activate MikroTik for user {Username}: {Error}",
+                    pppoeAccount.Username, updateResult.Message ?? activateResult.Message);
             }
 
             await _unitOfWork.CommitAsync(cancellationToken);

@@ -2,8 +2,11 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using BroadbandBilling.Application.Common.DTOs;
 using BroadbandBilling.Application.Common.Interfaces;
+using BroadbandBilling.Application.Features.Subscriptions.Commands;
 using BroadbandBilling.Application.UseCases.Subscriptions.CreateSubscription;
 using BroadbandBilling.Application.UseCases.Subscriptions.DTOs;
+using BroadbandBilling.Domain.Enums;
+using MediatR;
 
 namespace BroadbandBilling.API.Controllers;
 
@@ -13,10 +16,12 @@ namespace BroadbandBilling.API.Controllers;
 public class SubscriptionsController : ControllerBase
 {
     private readonly ISubscriptionService _subscriptionService;
+    private readonly IMediator _mediator;
 
-    public SubscriptionsController(ISubscriptionService subscriptionService)
+    public SubscriptionsController(ISubscriptionService subscriptionService, IMediator mediator)
     {
         _subscriptionService = subscriptionService;
+        _mediator = mediator;
     }
 
     [HttpGet]
@@ -100,4 +105,50 @@ public class SubscriptionsController : ControllerBase
 
         return Ok(result);
     }
+
+    /// <summary>
+    /// Activate a pending subscription (after payment confirmation)
+    /// </summary>
+    [HttpPost("{id}/activate")]
+    [Authorize(Roles = "SuperAdmin,Manager,Support")]
+    public async Task<ActionResult<ActivateSubscriptionResult>> Activate(
+        Guid id, [FromBody] ActivateSubscriptionDto? dto, CancellationToken cancellationToken)
+    {
+        var command = new ActivateSubscriptionCommand(id, dto?.PaymentReference);
+        var result = await _mediator.Send(command, cancellationToken);
+        
+        if (!result.Success)
+            return BadRequest(result);
+
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Get all subscriptions with PendingActivation status
+    /// </summary>
+    [HttpGet("pending-activation")]
+    [Authorize(Roles = "SuperAdmin,Manager,Support")]
+    public async Task<ActionResult<ApiResponse<IEnumerable<PendingActivationDto>>>> GetPendingActivations(CancellationToken cancellationToken)
+    {
+        var result = await _subscriptionService.GetPendingActivationsAsync(cancellationToken);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Reject a pending activation request
+    /// </summary>
+    [HttpPost("{id}/reject")]
+    [Authorize(Roles = "SuperAdmin,Manager")]
+    public async Task<ActionResult<ApiResponse<SubscriptionDto>>> Reject(
+        Guid id, [FromBody] RejectActivationDto dto, CancellationToken cancellationToken)
+    {
+        var result = await _subscriptionService.RejectActivationAsync(id, dto.Reason, cancellationToken);
+        if (!result.Success)
+            return BadRequest(result);
+
+        return Ok(result);
+    }
 }
+
+public record ActivateSubscriptionDto(string? PaymentReference = null);
+public record RejectActivationDto(string Reason);

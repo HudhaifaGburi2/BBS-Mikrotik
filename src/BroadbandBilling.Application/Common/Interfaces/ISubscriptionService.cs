@@ -14,4 +14,23 @@ public interface ISubscriptionService
     Task<ApiResponse<SubscriptionDto>> RenewAsync(Guid id, CancellationToken cancellationToken = default);
     Task<ApiResponse<SubscriptionDto>> SuspendAsync(Guid id, CancellationToken cancellationToken = default);
     Task<ApiResponse<SubscriptionDto>> CancelAsync(Guid id, string reason, CancellationToken cancellationToken = default);
+    Task<ApiResponse<IEnumerable<PendingActivationDto>>> GetPendingActivationsAsync(CancellationToken cancellationToken = default);
+    Task<ApiResponse<SubscriptionDto>> RejectActivationAsync(Guid id, string reason, CancellationToken cancellationToken = default);
 }
+
+public record PendingActivationDto(
+    Guid SubscriptionId,
+    Guid SubscriberId,
+    string SubscriberName,
+    string SubscriberEmail,
+    string SubscriberPhone,
+    Guid PlanId,
+    string PlanName,
+    decimal PlanPrice,
+    int DataLimitGB,
+    int SpeedMbps,
+    string PaymentStatus,
+    DateTime RequestDate,
+    DateTime? PaidAt,
+    string? PppUsername
+);

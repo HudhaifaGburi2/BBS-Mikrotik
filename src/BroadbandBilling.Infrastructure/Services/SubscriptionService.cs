@@ -1,9 +1,12 @@
 using AutoMapper;
 using BroadbandBilling.Application.Common.DTOs;
 using BroadbandBilling.Application.Common.Interfaces;
+using BroadbandBilling.Application.Interfaces;
 using BroadbandBilling.Application.UseCases.Subscriptions.CreateSubscription;
 using BroadbandBilling.Application.UseCases.Subscriptions.DTOs;
 using BroadbandBilling.Application.UseCases.Subscriptions.RenewSubscription;
+using BroadbandBilling.Domain.Enums;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace BroadbandBilling.Infrastructure.Services;
@@ -11,6 +14,7 @@ namespace BroadbandBilling.Infrastructure.Services;
 public class SubscriptionService : ISubscriptionService
 {
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IApplicationDbContext _dbContext;
     private readonly IMapper _mapper;
     private readonly CreateSubscriptionHandler _createSubscriptionHandler;
     private readonly RenewSubscriptionHandler _renewSubscriptionHandler;
@@ -18,12 +22,14 @@ public class SubscriptionService : ISubscriptionService
 
     public SubscriptionService(
         IUnitOfWork unitOfWork,
+        IApplicationDbContext dbContext,
         IMapper mapper,
         CreateSubscriptionHandler createSubscriptionHandler,
         RenewSubscriptionHandler renewSubscriptionHandler,
         ILogger<SubscriptionService> logger)
     {
         _unitOfWork = unitOfWork;
+        _dbContext = dbContext;
         _mapper = mapper;
         _createSubscriptionHandler = createSubscriptionHandler;
         _renewSubscriptionHandler = renewSubscriptionHandler;
@@ -108,5 +114,62 @@ public class SubscriptionService : ISubscriptionService
 
         var subscriptionDto = _mapper.Map<SubscriptionDto>(subscription);
         return ApiResponse<SubscriptionDto>.SuccessResponse(subscriptionDto, "Subscription cancelled successfully");
+    }
+
+    public async Task<ApiResponse<IEnumerable<PendingActivationDto>>> GetPendingActivationsAsync(CancellationToken cancellationToken = default)
+    {
+        var pendingSubscriptions = await _dbContext.Subscriptions
+            .Include(s => s.Subscriber)
+                .ThenInclude(sub => sub.PppoeAccounts)
+            .Include(s => s.Plan)
+            .Where(s => s.Status == SubscriptionStatus.PendingActivation)
+            .OrderByDescending(s => s.CreatedAt)
+            .ToListAsync(cancellationToken);
+
+        var pendingDtos = pendingSubscriptions.Select(s => new PendingActivationDto(
+            s.Id,
+            s.SubscriberId,
+            s.Subscriber.FullName,
+            s.Subscriber.Email,
+            s.Subscriber.PhoneNumber,
+            s.PlanId,
+            s.Plan?.Name ?? "Unknown",
+            s.Amount,
+            s.Plan?.DataLimitGB ?? 0,
+            s.Plan?.SpeedMbps ?? 0,
+            s.IsPaid ? "مدفوع" : "غير مدفوع",
+            s.CreatedAt,
+            s.PaidAt,
+            s.Subscriber.PppoeAccounts.FirstOrDefault(p => p.SubscriptionId == s.Id)?.Username
+        )).ToList();
+
+        return ApiResponse<IEnumerable<PendingActivationDto>>.SuccessResponse(
+            pendingDtos, 
+            $"تم جلب {pendingDtos.Count} طلب تفعيل معلق");
+    }
+
+    public async Task<ApiResponse<SubscriptionDto>> RejectActivationAsync(Guid id, string reason, CancellationToken cancellationToken = default)
+    {
+        var subscription = await _unitOfWork.Subscriptions.GetByIdAsync(id, cancellationToken);
+        if (subscription == null)
+        {
+            return ApiResponse<SubscriptionDto>.FailureResponse("الاشتراك غير موجود", $"Subscription with ID {id} not found");
+        }
+
+        if (subscription.Status != SubscriptionStatus.PendingActivation)
+        {
+            return ApiResponse<SubscriptionDto>.FailureResponse(
+                "لا يمكن رفض اشتراك غير معلق", 
+                $"Cannot reject subscription with status {subscription.Status}");
+        }
+
+        subscription.Cancel(reason ?? "تم رفض طلب التفعيل من قبل الإدارة");
+        _unitOfWork.Subscriptions.Update(subscription);
+        await _unitOfWork.CommitAsync(cancellationToken);
+
+        _logger.LogInformation("Rejected pending activation for subscription {SubscriptionId}: {Reason}", id, reason);
+
+        var subscriptionDto = _mapper.Map<SubscriptionDto>(subscription);
+        return ApiResponse<SubscriptionDto>.SuccessResponse(subscriptionDto, "تم رفض طلب التفعيل بنجاح");
     }
 }
