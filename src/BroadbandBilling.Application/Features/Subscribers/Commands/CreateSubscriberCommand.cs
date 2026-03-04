@@ -142,27 +142,21 @@ public class CreateSubscriberCommandHandler : IRequestHandler<CreateSubscriberCo
                 subscriber.UpdateNetworkInfo(subscriber.MacAddress, subscriber.IpAddress, pppUsername);
 
                 // Sync with MikroTik synchronously to ensure user is created
-                if (mikroTikDevice != null)
+                // Use appsettings.json MikroTik settings (pass null to use defaults)
+                try
                 {
-                    try
-                    {
-                        // Ensure profile exists on MikroTik before adding user
-                        await EnsureProfileExistsOnMikroTik(mikroTikDevice, plan, cancellationToken);
-                        
-                        // Add PPPoE user to MikroTik
-                        await SyncPppoeAccountWithMikroTik(pppoeAccount, mikroTikDevice, cancellationToken);
-                        
-                        _logger.LogInformation("MikroTik sync completed for PPPoE account {Username}", pppoeAccount.Username);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "MikroTik sync failed for subscriber PPPoE account {Username}. Account saved to DB but not synced.", pppoeAccount.Username);
-                        // Don't throw - allow subscriber creation to succeed even if MikroTik sync fails
-                    }
+                    // Ensure profile exists on MikroTik before adding user
+                    await EnsureProfileExistsOnMikroTik(plan, cancellationToken);
+                    
+                    // Add PPPoE user to MikroTik
+                    await SyncPppoeAccountWithMikroTik(pppoeAccount, cancellationToken);
+                    
+                    _logger.LogInformation("MikroTik sync completed for PPPoE account {Username}", pppoeAccount.Username);
                 }
-                else
+                catch (Exception ex)
                 {
-                    _logger.LogWarning("No active MikroTik device configured. PPPoE account for subscriber {SubscriberId} saved without sync.", subscriber.Id);
+                    _logger.LogError(ex, "MikroTik sync failed for subscriber PPPoE account {Username}. Account saved to DB but not synced.", pppoeAccount.Username);
+                    // Don't throw - allow subscriber creation to succeed even if MikroTik sync fails
                 }
             }
         }
@@ -219,16 +213,12 @@ public class CreateSubscriberCommandHandler : IRequestHandler<CreateSubscriberCo
         return $"{sanitized}_{suffix}";
     }
 
-    private async Task EnsureProfileExistsOnMikroTik(MikroTikDevice device, Plan plan, CancellationToken cancellationToken)
+    private async Task EnsureProfileExistsOnMikroTik(Plan plan, CancellationToken cancellationToken)
     {
         try
         {
-            var connectionRequest = new MikroTikConnectionRequest
-            {
-                Host = device.IpAddress.Value,
-                Username = device.Username,
-                Password = device.Password
-            };
+            // Use empty connection request - MikroTikService will use appsettings.json defaults
+            var connectionRequest = new MikroTikConnectionRequest();
 
             // Check if profile exists
             var profilesResult = await _mikroTikService.GetPppProfilesAsync(connectionRequest, cancellationToken);
@@ -241,9 +231,6 @@ public class CreateSubscriberCommandHandler : IRequestHandler<CreateSubscriberCo
                     var rateLimit = $"{plan.SpeedMbps}M/{plan.SpeedMbps}M";
                     var addProfileRequest = new AddProfileRequest
                     {
-                        Host = device.IpAddress.Value,
-                        Username = device.Username,
-                        Password = device.Password,
                         ProfileName = plan.MikroTikProfileName,
                         RateLimit = rateLimit
                     };
@@ -268,15 +255,13 @@ public class CreateSubscriberCommandHandler : IRequestHandler<CreateSubscriberCo
         }
     }
 
-    private async Task SyncPppoeAccountWithMikroTik(PppoeAccount pppoeAccount, MikroTikDevice device, CancellationToken cancellationToken)
+    private async Task SyncPppoeAccountWithMikroTik(PppoeAccount pppoeAccount, CancellationToken cancellationToken)
     {
         try
         {
+            // Use empty connection request - MikroTikService will use appsettings.json defaults
             var addRequest = new AddPppUserRequest
             {
-                Host = device.IpAddress.Value,
-                Username = device.Username,
-                Password = device.Password,
                 PppUsername = pppoeAccount.Username,
                 PppPassword = pppoeAccount.Password,
                 Profile = pppoeAccount.ProfileName,
