@@ -37,6 +37,13 @@ public class SubscriptionService : ISubscriptionService
         return ApiResponse<IEnumerable<SubscriptionDto>>.SuccessResponse(subscriptionDtos, "Subscriptions retrieved successfully");
     }
 
+    public async Task<ApiResponse<IEnumerable<SubscriptionDto>>> GetBySubscriberIdAsync(Guid subscriberId, CancellationToken cancellationToken = default)
+    {
+        var subscriptions = await _unitOfWork.Subscriptions.GetBySubscriberIdAsync(subscriberId, cancellationToken);
+        var subscriptionDtos = _mapper.Map<IEnumerable<SubscriptionDto>>(subscriptions);
+        return ApiResponse<IEnumerable<SubscriptionDto>>.SuccessResponse(subscriptionDtos, "Subscriptions retrieved successfully");
+    }
+
     public async Task<ApiResponse<SubscriptionDto>> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var subscription = await _unitOfWork.Subscriptions.GetWithDetailsAsync(id, cancellationToken);

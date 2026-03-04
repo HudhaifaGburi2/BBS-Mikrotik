@@ -15,6 +15,11 @@ public record SubscriberDto(
     bool IsActive,
     DateTime CreatedAt,
     DateTime? UpdatedAt,
+    // Network Info
+    string? MikroTikUsername = null,
+    string? MacAddress = null,
+    string? IpAddress = null,
+    // Related data
     List<SubscriptionDto>? Subscriptions = null,
     List<PppoeAccountDto>? PppoeAccounts = null
 );

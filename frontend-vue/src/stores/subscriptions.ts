@@ -3,6 +3,12 @@ import { ref } from 'vue'
 import { apiGet, apiPost } from '@/services/http'
 import type { Subscription, CreateSubscriptionCommand, ApiResponse } from '@/types'
 
+interface SubscriptionApiResponse {
+  success: boolean
+  data: Subscription[]
+  message?: string
+}
+
 export const useSubscriptionsStore = defineStore('subscriptions', () => {
   const subscriptions = ref<Subscription[]>([])
   const currentSubscription = ref<Subscription | null>(null)
@@ -11,9 +17,14 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
   async function fetchAll() {
     isLoading.value = true
     try {
-      const res = await apiGet<Subscription[]>('/subscriptions')
+      const res = await apiGet<SubscriptionApiResponse>('/subscriptions')
+      // Handle both wrapped and unwrapped response formats
       if (res.data) {
-        subscriptions.value = res.data
+        if (Array.isArray(res.data)) {
+          subscriptions.value = res.data
+        } else if (res.data.data && Array.isArray(res.data.data)) {
+          subscriptions.value = res.data.data
+        }
       }
     } finally {
       isLoading.value = false

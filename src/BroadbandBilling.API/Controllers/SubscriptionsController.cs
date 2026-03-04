@@ -22,7 +22,29 @@ public class SubscriptionsController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<ApiResponse<IEnumerable<SubscriptionDto>>>> GetAll(CancellationToken cancellationToken)
     {
+        // Check if user is a subscriber - if so, return only their subscriptions
+        var subscriberIdClaim = User.FindFirst("SubscriberId")?.Value;
+        if (!string.IsNullOrEmpty(subscriberIdClaim) && Guid.TryParse(subscriberIdClaim, out var subscriberId))
+        {
+            var myResult = await _subscriptionService.GetBySubscriberIdAsync(subscriberId, cancellationToken);
+            return Ok(myResult);
+        }
+        
+        // Admin users get all subscriptions
         var result = await _subscriptionService.GetAllAsync(cancellationToken);
+        return Ok(result);
+    }
+
+    [HttpGet("me")]
+    public async Task<ActionResult<ApiResponse<IEnumerable<SubscriptionDto>>>> GetMySubscriptions(CancellationToken cancellationToken)
+    {
+        var subscriberIdClaim = User.FindFirst("SubscriberId")?.Value;
+        if (string.IsNullOrEmpty(subscriberIdClaim) || !Guid.TryParse(subscriberIdClaim, out var subscriberId))
+        {
+            return Unauthorized(new { error = "لا يوجد معرف مشترك في الجلسة" });
+        }
+
+        var result = await _subscriptionService.GetBySubscriberIdAsync(subscriberId, cancellationToken);
         return Ok(result);
     }
 

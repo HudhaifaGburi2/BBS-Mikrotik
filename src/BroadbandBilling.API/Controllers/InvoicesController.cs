@@ -20,7 +20,28 @@ public class InvoicesController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
     {
+        // Check if user is a subscriber - if so, return only their invoices
+        var subscriberIdClaim = User.FindFirst("SubscriberId")?.Value;
+        if (!string.IsNullOrEmpty(subscriberIdClaim) && Guid.TryParse(subscriberIdClaim, out var subscriberId))
+        {
+            var myResult = await _invoiceService.GetBySubscriberIdAsync(subscriberId, cancellationToken);
+            return Ok(myResult.Data);
+        }
+        
         var result = await _invoiceService.GetAllAsync(cancellationToken);
+        return Ok(result.Data);
+    }
+
+    [HttpGet("me")]
+    public async Task<IActionResult> GetMyInvoices(CancellationToken cancellationToken)
+    {
+        var subscriberIdClaim = User.FindFirst("SubscriberId")?.Value;
+        if (string.IsNullOrEmpty(subscriberIdClaim) || !Guid.TryParse(subscriberIdClaim, out var subscriberId))
+        {
+            return Unauthorized(new { error = "لا يوجد معرف مشترك في الجلسة" });
+        }
+
+        var result = await _invoiceService.GetBySubscriberIdAsync(subscriberId, cancellationToken);
         return Ok(result.Data);
     }
 

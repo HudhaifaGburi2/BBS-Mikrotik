@@ -1,46 +1,29 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { apiPost } from '@/services/http'
 import { useToastStore } from '@/stores/toast'
+import { useMikroTikStore } from '@/stores/mikrotik'
 import AppLoader from '@/components/AppLoader.vue'
-interface PppUser {
-  name: string
-  password: string
-  profile: string
-  service: string
-  disabled: boolean
-  comment: string
-}
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
 
 const toast = useToastStore()
-const users = ref<PppUser[]>([])
-const isLoading = ref(false)
-const showAddForm = ref(false)
-const hasLoaded = ref(false)
-const errorMessage = ref('')
+const mikroTikStore = useMikroTikStore()
 
+const showAddForm = ref(false)
 const newUser = ref({ name: '', password: '', profile: 'default', service: 'pppoe' })
 
-async function loadUsers() {
-  isLoading.value = true
-  errorMessage.value = ''
-  try {
-    // Backend uses credentials from appsettings.json
-    const res = await apiPost<{ success: boolean; data: PppUser[]; message: string }>('/mikrotik/ppp-users', {})
-    hasLoaded.value = true
-    if (res.data?.success && res.data.data) {
-      users.value = res.data.data
-    } else {
-      users.value = []
-      errorMessage.value = res.data?.message || 'لا توجد بيانات'
-    }
-  } catch (err: any) {
-    hasLoaded.value = true
-    users.value = []
-    errorMessage.value = err.response?.data?.message || 'فشل الاتصال بجهاز MikroTik - تحقق من إعدادات الخادم'
-  } finally {
-    isLoading.value = false
-  }
+// Delete confirmation
+const confirmVisible = ref(false)
+const pendingDeleteName = ref('')
+
+// Computed from store
+const users = computed(() => mikroTikStore.pppUsers)
+const isLoading = computed(() => mikroTikStore.isLoading)
+const errorMessage = computed(() => mikroTikStore.errorMessage)
+const hasLoaded = computed(() => mikroTikStore.isConnected || mikroTikStore.pppUsers.length > 0)
+
+async function loadUsers(force = false) {
+  await mikroTikStore.fetchPppUsers(force)
 }
 
 async function addUser() {
@@ -49,7 +32,6 @@ async function addUser() {
     return
   }
   try {
-    // Backend expects pppUsername, pppPassword, profile, service
     const payload = {
       pppUsername: newUser.value.name,
       pppPassword: newUser.value.password,
@@ -61,7 +43,7 @@ async function addUser() {
       toast.success('تم إضافة المستخدم بنجاح')
       showAddForm.value = false
       newUser.value = { name: '', password: '', profile: 'default', service: 'pppoe' }
-      loadUsers()
+      await loadUsers(true)
     } else {
       toast.error(res.data?.message || 'فشل إضافة المستخدم')
     }
@@ -70,14 +52,19 @@ async function addUser() {
   }
 }
 
-async function deleteUser(username: string) {
-  if (!confirm(`هل أنت متأكد من حذف المستخدم ${username}؟`)) return
+function confirmDelete(username: string) {
+  pendingDeleteName.value = username
+  confirmVisible.value = true
+}
+
+async function handleDelete() {
+  confirmVisible.value = false
+  const username = pendingDeleteName.value
   try {
-    // Backend expects pppUsername
     const res = await apiPost<{ success: boolean; message: string }>('/mikrotik/ppp-users/delete', { pppUsername: username })
     if (res.data?.success) {
       toast.success('تم حذف المستخدم')
-      loadUsers()
+      await loadUsers(true)
     } else {
       toast.error(res.data?.message || 'فشل حذف المستخدم')
     }
@@ -89,11 +76,10 @@ async function deleteUser(username: string) {
 async function toggleUser(username: string, disabled: boolean) {
   const endpoint = disabled ? '/mikrotik/ppp-users/activate' : '/mikrotik/ppp-users/deactivate'
   try {
-    // Backend expects pppUsername
     const res = await apiPost<{ success: boolean; message: string }>(endpoint, { pppUsername: username })
     if (res.data?.success) {
       toast.success(disabled ? 'تم تفعيل المستخدم' : 'تم تعطيل المستخدم')
-      loadUsers()
+      await loadUsers(true)
     } else {
       toast.error(res.data?.message || 'فشل تغيير حالة المستخدم')
     }
@@ -101,6 +87,11 @@ async function toggleUser(username: string, disabled: boolean) {
     toast.error(err.response?.data?.message || 'فشل تغيير حالة المستخدم')
   }
 }
+
+// Auto-load on mount
+onMounted(() => {
+  loadUsers()
+})
 </script>
 
 <template>
@@ -113,7 +104,7 @@ async function toggleUser(username: string, disabled: boolean) {
         <button v-if="hasLoaded" class="px-4 py-2 bg-jazan-green text-white rounded-lg hover:opacity-90 text-sm" @click="showAddForm = !showAddForm">
           {{ showAddForm ? 'إلغاء' : '+ إضافة مستخدم' }}
         </button>
-        <button class="px-4 py-2 bg-coastal-blue text-white rounded-lg hover:opacity-90 text-sm" @click="loadUsers">
+        <button class="px-4 py-2 bg-coastal-blue text-white rounded-lg hover:opacity-90 text-sm" @click="loadUsers(true)">
           {{ hasLoaded ? 'تحديث' : 'اتصال' }}
         </button>
       </div>
@@ -167,7 +158,7 @@ async function toggleUser(username: string, disabled: boolean) {
                 <button class="text-coastal-blue hover:underline font-medium" @click="toggleUser(u.name, u.disabled)">
                   {{ u.disabled ? 'تفعيل' : 'تعطيل' }}
                 </button>
-                <button class="text-red-coral hover:underline font-medium" @click="deleteUser(u.name)">حذف</button>
+                <button class="text-red-coral hover:underline font-medium" @click="confirmDelete(u.name)">حذف</button>
               </td>
             </tr>
           </tbody>
@@ -184,5 +175,16 @@ async function toggleUser(username: string, disabled: boolean) {
         </div>
       </div>
     </div>
+
+    <!-- Delete Confirmation Dialog -->
+    <ConfirmDialog
+      :visible="confirmVisible"
+      title="تأكيد الحذف"
+      :message="`هل أنت متأكد من حذف المستخدم '${pendingDeleteName}'؟ هذا الإجراء لا يمكن التراجع عنه.`"
+      confirm-text="حذف"
+      cancel-text="إلغاء"
+      @confirm="handleDelete"
+      @cancel="confirmVisible = false"
+    />
   </div>
 </template>

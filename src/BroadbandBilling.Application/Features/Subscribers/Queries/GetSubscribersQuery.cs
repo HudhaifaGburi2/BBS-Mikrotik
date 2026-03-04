@@ -93,6 +93,9 @@ public class GetSubscribersQueryHandler : IRequestHandler<GetSubscribersQuery, P
             subscriber.IsActive,
             subscriber.CreatedAt,
             subscriber.UpdatedAt,
+            subscriber.MikroTikUsername,
+            subscriber.MacAddress,
+            subscriber.IpAddress,
             subscriptions,
             pppoeAccounts
         );
@@ -162,6 +165,9 @@ public class GetSubscriberByIdQueryHandler : IRequestHandler<GetSubscriberByIdQu
             subscriber.IsActive,
             subscriber.CreatedAt,
             subscriber.UpdatedAt,
+            subscriber.MikroTikUsername,
+            subscriber.MacAddress,
+            subscriber.IpAddress,
             subscriptions,
             pppoeAccounts
         );

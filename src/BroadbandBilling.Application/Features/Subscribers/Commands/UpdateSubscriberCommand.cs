@@ -76,6 +76,9 @@ public class UpdateSubscriberCommandHandler : IRequestHandler<UpdateSubscriberCo
             subscriber.IsActive,
             subscriber.CreatedAt,
             subscriber.UpdatedAt,
+            subscriber.MikroTikUsername,
+            subscriber.MacAddress,
+            subscriber.IpAddress,
             subscriber.Subscriptions.Select(s => new SubscriptionDto(
                 s.Id,
                 s.PlanId,

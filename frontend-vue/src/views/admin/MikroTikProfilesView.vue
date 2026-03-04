@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { apiPost } from '@/services/http'
 import { useToastStore } from '@/stores/toast'
 import AppLoader from '@/components/AppLoader.vue'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
+
 interface PppProfile {
   name: string
   localAddress: string
@@ -20,6 +22,14 @@ const hasLoaded = ref(false)
 const errorMessage = ref('')
 
 const newProfile = ref({ name: '', localAddress: '', remoteAddress: '', rateLimit: '' })
+
+// Edit state
+const editingProfile = ref<string | null>(null)
+const editForm = ref({ rateLimit: '', localAddress: '', remoteAddress: '' })
+
+// Delete confirmation
+const confirmVisible = ref(false)
+const pendingDeleteName = ref('')
 
 async function loadProfiles() {
   isLoading.value = true
@@ -70,10 +80,15 @@ async function addProfile() {
   }
 }
 
-async function deleteProfile(name: string) {
-  if (!confirm(`هل أنت متأكد من حذف البروفايل ${name}؟`)) return
+function confirmDelete(name: string) {
+  pendingDeleteName.value = name
+  confirmVisible.value = true
+}
+
+async function handleDelete() {
+  confirmVisible.value = false
+  const name = pendingDeleteName.value
   try {
-    // Backend expects profileName
     const res = await apiPost<{ success: boolean; message: string }>('/mikrotik/ppp-profiles/delete', { profileName: name })
     if (res.data?.success) {
       toast.success('تم حذف البروفايل')
@@ -85,6 +100,50 @@ async function deleteProfile(name: string) {
     toast.error(err.response?.data?.message || 'فشل حذف البروفايل')
   }
 }
+
+function startEdit(profile: PppProfile) {
+  editingProfile.value = profile.name
+  editForm.value = {
+    rateLimit: profile.rateLimit || '',
+    localAddress: profile.localAddress || '',
+    remoteAddress: profile.remoteAddress || ''
+  }
+}
+
+function cancelEdit() {
+  editingProfile.value = null
+  editForm.value = { rateLimit: '', localAddress: '', remoteAddress: '' }
+}
+
+async function saveEdit() {
+  if (!editingProfile.value) return
+  
+  if (!editForm.value.rateLimit.trim()) {
+    toast.error('الرجاء إدخال حد السرعة')
+    return
+  }
+  
+  try {
+    const res = await apiPost<{ success: boolean; message: string }>('/mikrotik/ppp-profiles/update', {
+      profileName: editingProfile.value,
+      rateLimit: editForm.value.rateLimit
+    })
+    if (res.data?.success) {
+      toast.success('تم تحديث البروفايل بنجاح')
+      cancelEdit()
+      loadProfiles()
+    } else {
+      toast.error(res.data?.message || 'فشل تحديث البروفايل')
+    }
+  } catch (err: any) {
+    toast.error(err.response?.data?.message || 'فشل تحديث البروفايل')
+  }
+}
+
+// Auto-load on mount
+onMounted(() => {
+  loadProfiles()
+})
 </script>
 
 <template>
@@ -143,9 +202,33 @@ async function deleteProfile(name: string) {
               <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-charcoal">{{ p.name }}</td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-light-gray">{{ p.localAddress || '-' }}</td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-light-gray">{{ p.remoteAddress || '-' }}</td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-light-gray">{{ p.rateLimit || 'غير محدود' }}</td>
+              
+              <!-- Rate Limit - Editable -->
               <td class="px-6 py-4 whitespace-nowrap text-sm">
-                <button class="text-red-coral hover:underline font-medium" @click="deleteProfile(p.name)">حذف</button>
+                <template v-if="editingProfile === p.name">
+                  <input 
+                    v-model="editForm.rateLimit" 
+                    placeholder="مثال: 10M/10M" 
+                    class="border border-jazan-green rounded px-2 py-1 text-sm w-32 focus:ring-2 focus:ring-jazan-green"
+                  />
+                </template>
+                <template v-else>
+                  <span :class="p.rateLimit ? 'text-charcoal' : 'text-warning-yellow'">
+                    {{ p.rateLimit || 'غير محدد ⚠️' }}
+                  </span>
+                </template>
+              </td>
+              
+              <!-- Actions -->
+              <td class="px-6 py-4 whitespace-nowrap text-sm space-x-2 space-x-reverse">
+                <template v-if="editingProfile === p.name">
+                  <button class="text-teal hover:underline font-medium" @click="saveEdit">حفظ</button>
+                  <button class="text-light-gray hover:underline" @click="cancelEdit">إلغاء</button>
+                </template>
+                <template v-else>
+                  <button class="text-coastal-blue hover:underline font-medium" @click="startEdit(p)">تعديل</button>
+                  <button class="text-red-coral hover:underline font-medium" @click="confirmDelete(p.name)">حذف</button>
+                </template>
               </td>
             </tr>
           </tbody>
@@ -162,5 +245,16 @@ async function deleteProfile(name: string) {
         </div>
       </div>
     </div>
+
+    <!-- Delete Confirmation Dialog -->
+    <ConfirmDialog
+      :visible="confirmVisible"
+      title="تأكيد الحذف"
+      :message="`هل أنت متأكد من حذف البروفايل '${pendingDeleteName}'؟ هذا الإجراء لا يمكن التراجع عنه.`"
+      confirm-text="حذف"
+      cancel-text="إلغاء"
+      @confirm="handleDelete"
+      @cancel="confirmVisible = false"
+    />
   </div>
 </template>

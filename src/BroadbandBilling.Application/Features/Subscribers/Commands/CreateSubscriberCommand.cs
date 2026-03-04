@@ -74,6 +74,10 @@ public class CreateSubscriberCommandHandler : IRequestHandler<CreateSubscriberCo
             var passwordHash = _passwordHasher.HashPassword(request.SystemPassword);
             var user = User.CreateSubscriber(request.SystemUsername, request.Email, passwordHash, subscriber.Id);
             _dbContext.Users.Add(user);
+            
+            // Link subscriber to user (bidirectional)
+            subscriber.SetUserId(user.Id);
+            
             _logger.LogInformation("Created system user account {Username} for subscriber {SubscriberId}", request.SystemUsername, subscriber.Id);
         }
 
@@ -133,29 +137,28 @@ public class CreateSubscriberCommandHandler : IRequestHandler<CreateSubscriberCo
                 );
 
                 await _unitOfWork.PppoeAccounts.AddAsync(pppoeAccount, cancellationToken);
+                
+                // Update subscriber with MikroTik username for easy reference
+                subscriber.UpdateNetworkInfo(subscriber.MacAddress, subscriber.IpAddress, pppUsername);
 
-                // Sync with MikroTik in background (non-blocking) to avoid slow subscriber creation
+                // Sync with MikroTik synchronously to ensure user is created
                 if (mikroTikDevice != null)
                 {
-                    var deviceCopy = mikroTikDevice;
-                    var planCopy = plan;
-                    var accountCopy = pppoeAccount;
-                    
-                    // Fire-and-forget background sync - don't block subscriber creation
-                    _ = Task.Run(async () =>
+                    try
                     {
-                        try
-                        {
-                            await EnsureProfileExistsOnMikroTik(deviceCopy, planCopy, CancellationToken.None);
-                            await SyncPppoeAccountWithMikroTik(accountCopy, deviceCopy, CancellationToken.None);
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.LogError(ex, "Background MikroTik sync failed for subscriber PPPoE account {Username}", accountCopy.Username);
-                        }
-                    });
-                    
-                    _logger.LogInformation("MikroTik sync queued in background for PPPoE account {Username}", pppoeAccount.Username);
+                        // Ensure profile exists on MikroTik before adding user
+                        await EnsureProfileExistsOnMikroTik(mikroTikDevice, plan, cancellationToken);
+                        
+                        // Add PPPoE user to MikroTik
+                        await SyncPppoeAccountWithMikroTik(pppoeAccount, mikroTikDevice, cancellationToken);
+                        
+                        _logger.LogInformation("MikroTik sync completed for PPPoE account {Username}", pppoeAccount.Username);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "MikroTik sync failed for subscriber PPPoE account {Username}. Account saved to DB but not synced.", pppoeAccount.Username);
+                        // Don't throw - allow subscriber creation to succeed even if MikroTik sync fails
+                    }
                 }
                 else
                 {
@@ -336,6 +339,9 @@ public class CreateSubscriberCommandHandler : IRequestHandler<CreateSubscriberCo
             subscriber.IsActive,
             subscriber.CreatedAt,
             subscriber.UpdatedAt,
+            subscriber.MikroTikUsername,
+            subscriber.MacAddress,
+            subscriber.IpAddress,
             subscriptions,
             pppoeAccounts
         );

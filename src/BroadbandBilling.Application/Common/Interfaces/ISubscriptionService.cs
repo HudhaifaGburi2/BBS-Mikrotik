@@ -8,6 +8,7 @@ namespace BroadbandBilling.Application.Common.Interfaces;
 public interface ISubscriptionService
 {
     Task<ApiResponse<IEnumerable<SubscriptionDto>>> GetAllAsync(CancellationToken cancellationToken = default);
+    Task<ApiResponse<IEnumerable<SubscriptionDto>>> GetBySubscriberIdAsync(Guid subscriberId, CancellationToken cancellationToken = default);
     Task<ApiResponse<SubscriptionDto>> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
     Task<ApiResponse<SubscriptionDto>> CreateAsync(CreateSubscriptionCommand command, CancellationToken cancellationToken = default);
     Task<ApiResponse<SubscriptionDto>> RenewAsync(Guid id, CancellationToken cancellationToken = default);

@@ -1,27 +1,36 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { usePlansStore } from '@/stores/plans'
+import { useSubscriptionsStore } from '@/stores/subscriptions'
 import { useToastStore } from '@/stores/toast'
 import { useFormatters } from '@/composables/useFormatters'
+import { apiGet } from '@/services/http'
 import AppLoader from '@/components/AppLoader.vue'
-import type { Plan } from '@/types'
+import type { Plan, Subscriber } from '@/types'
 
 const plansStore = usePlansStore()
+const subscriptionsStore = useSubscriptionsStore()
 const toast = useToastStore()
 const { formatCurrency } = useFormatters()
 
 const selectedPlan = ref<Plan | null>(null)
 const showPaymentInfo = ref(false)
 const selectedMethod = ref('BankTransfer')
+const myProfile = ref<Subscriber | null>(null)
+const hasActiveSubscription = ref(false)
 
 const paymentChannels = [
   { value: 'BankTransfer', label: 'تحويل بنكي', icon: '🏦', desc: 'حوّل المبلغ إلى حساب الشركة البنكي' },
-  { value: 'Mada', label: 'مدى', icon: 'M', desc: 'ادفع عبر بطاقة مدى' },
-  { value: 'Visa', label: 'Visa', icon: 'V', desc: 'ادفع عبر بطاقة Visa' },
-  { value: 'MasterCard', label: 'MasterCard', icon: 'MC', desc: 'ادفع عبر بطاقة MasterCard' },
+  { value: 'Mada', label: 'مدى', icon: 'M', desc: 'ادفع عبر بطاقة مدى (قريباً)' },
+  { value: 'Visa', label: 'Visa', icon: 'V', desc: 'ادفع عبر بطاقة Visa (قريباً)' },
+  { value: 'MasterCard', label: 'MasterCard', icon: 'MC', desc: 'ادفع عبر بطاقة MasterCard (قريباً)' },
 ]
 
 function selectPlan(plan: Plan) {
+  if (hasActiveSubscription.value) {
+    toast.error('لديك اشتراك نشط بالفعل. يرجى الانتظار حتى انتهاء اشتراكك الحالي.')
+    return
+  }
   selectedPlan.value = plan
   showPaymentInfo.value = true
   window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -32,13 +41,41 @@ function cancelSelection() {
   showPaymentInfo.value = false
 }
 
-function confirmPurchase() {
-  toast.success('تم إرسال طلب الاشتراك بنجاح! سيتم تفعيل اشتراكك بعد تأكيد الدفع من قبل المسؤول.')
-  showPaymentInfo.value = false
-  selectedPlan.value = null
+async function confirmPurchase() {
+  if (!selectedPlan.value) return
+  
+  // For bank transfer, just show confirmation - admin will activate manually
+  if (selectedMethod.value === 'BankTransfer') {
+    toast.success('تم إرسال طلب الاشتراك بنجاح! سيتم تفعيل اشتراكك بعد تأكيد الدفع من قبل المسؤول.')
+    showPaymentInfo.value = false
+    selectedPlan.value = null
+    return
+  }
+  
+  // For card payments (future implementation)
+  toast.info('بوابة الدفع الإلكتروني قيد التطوير. يرجى استخدام التحويل البنكي حالياً.')
 }
 
-onMounted(() => plansStore.fetchPlans(true))
+onMounted(async () => {
+  await plansStore.fetchPlans(true)
+  
+  // Check if user has active subscription
+  try {
+    const [profileRes] = await Promise.all([
+      apiGet<Subscriber>('/subscribers/me'),
+      subscriptionsStore.fetchAll()
+    ])
+    if (profileRes.data) {
+      myProfile.value = profileRes.data
+    }
+    // Check for active subscriptions
+    hasActiveSubscription.value = subscriptionsStore.subscriptions.some(
+      s => s.status === 'Active' || s.status === 'PendingActivation'
+    )
+  } catch {
+    // Ignore errors - user might not have profile yet
+  }
+})
 </script>
 
 <template>
