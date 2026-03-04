@@ -151,6 +151,9 @@ async function handleSubmit() {
         autoCreateMikroTik: form.value.autoCreateMikroTik && !!form.value.planId,
         pppUsername: !form.value.autoCreateMikroTik && form.value.mikroTikUsername ? sanitize(form.value.mikroTikUsername) : null,
         pppPassword: !form.value.autoCreateMikroTik && form.value.mikroTikPassword ? form.value.mikroTikPassword : null,
+        createSystemAccount: form.value.createSystemAccount,
+        systemUsername: form.value.createSystemAccount && form.value.systemUsername ? sanitize(form.value.systemUsername) : null,
+        systemPassword: form.value.createSystemAccount && form.value.systemPassword ? form.value.systemPassword : null,
       }
       await subscribersStore.createSubscriber(command)
       toast.success('تم إنشاء المشترك بنجاح')
