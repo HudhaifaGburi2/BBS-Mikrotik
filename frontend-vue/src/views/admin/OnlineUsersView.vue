@@ -82,18 +82,20 @@ async function disconnectUser(username: string) {
               <th class="px-6 py-3 text-right text-xs font-medium text-coastal-blue uppercase">مدة الاتصال</th>
               <th class="px-6 py-3 text-right text-xs font-medium text-coastal-blue uppercase">تحميل</th>
               <th class="px-6 py-3 text-right text-xs font-medium text-coastal-blue uppercase">رفع</th>
+              <th class="px-6 py-3 text-right text-xs font-medium text-coastal-blue uppercase">الإجمالي</th>
               <th class="px-6 py-3 text-right text-xs font-medium text-coastal-blue uppercase">إجراءات</th>
             </tr>
           </thead>
           <tbody class="bg-white divide-y divide-gray-200">
-            <tr v-for="s in sessions" :key="s.username" class="hover:bg-gray-50">
-              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-charcoal">{{ s.username }}</td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-light-gray">{{ s.address }}</td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-light-gray">{{ s.uptime }}</td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-light-gray">{{ formatBytes(s.bytesIn) }}</td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-light-gray">{{ formatBytes(s.bytesOut) }}</td>
+            <tr v-for="s in sessions" :key="s.id || s.name" class="hover:bg-gray-50">
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-charcoal">{{ s.name }}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-light-gray">{{ s.address || '—' }}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-light-gray">{{ s.uptime || '—' }}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-light-gray">{{ formatBytes(s.limitBytesIn || 0) }}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-light-gray">{{ formatBytes(s.limitBytesOut || 0) }}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-golden-sand-dark">{{ formatBytes((s.limitBytesIn || 0) + (s.limitBytesOut || 0)) }}</td>
               <td class="px-6 py-4 whitespace-nowrap text-sm">
-                <button class="text-red-coral hover:text-red-coral-dark font-medium" @click="disconnectUser(s.username)">قطع</button>
+                <button class="text-red-coral hover:text-red-coral-dark font-medium" @click="disconnectUser(s.name)">قطع</button>
               </td>
             </tr>
           </tbody>

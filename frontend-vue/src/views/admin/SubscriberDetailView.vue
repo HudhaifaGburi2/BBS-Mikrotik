@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useSubscribersStore } from '@/stores/subscribers'
 import { usePlansStore } from '@/stores/plans'
 import { useToastStore } from '@/stores/toast'
+import { useFormatters } from '@/composables/useFormatters'
 import AppLoader from '@/components/AppLoader.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
 
@@ -12,6 +13,20 @@ const router = useRouter()
 const store = useSubscribersStore()
 const plansStore = usePlansStore()
 const toast = useToastStore()
+const { formatBytes } = useFormatters()
+
+function getDataUsagePercent(usedBytes: number, limitGB: number): number {
+  if (!limitGB || limitGB <= 0) return 0
+  const limitBytes = limitGB * 1024 * 1024 * 1024
+  return Math.min(100, Math.round((usedBytes / limitBytes) * 100))
+}
+
+function getRemainingGB(usedBytes: number, limitGB: number): string {
+  if (!limitGB || limitGB <= 0) return 'غير محدود'
+  const usedGB = usedBytes / (1024 * 1024 * 1024)
+  const remaining = Math.max(0, limitGB - usedGB)
+  return remaining.toFixed(2) + ' GB'
+}
 
 const id = computed(() => route.params.id as string)
 const sub = computed(() => store.currentSubscriber)
@@ -149,6 +164,35 @@ async function handleDelete() {
           <div v-for="s in sub.subscriptions" :key="s.id" class="bg-jazan-green/5 rounded-lg p-3">
             <div class="flex justify-between mb-1"><span class="font-semibold text-charcoal">{{ s.planName }}</span><StatusBadge :status="String(s.status) === '1' ? 'Active' : 'Pending'" /></div>
             <div class="text-xs text-light-gray">{{ new Date(s.startDate).toLocaleDateString('ar-SA') }} → {{ new Date(s.endDate).toLocaleDateString('ar-SA') }}</div>
+            
+            <!-- Data Usage Section -->
+            <div class="mt-3 pt-3 border-t border-jazan-green/20">
+              <p class="text-xs font-semibold text-coastal-blue mb-2">استهلاك البيانات</p>
+              <div class="grid grid-cols-3 gap-2 text-xs mb-2">
+                <div>
+                  <span class="text-light-gray">المستهلك:</span>
+                  <span class="font-semibold text-charcoal mr-1">{{ formatBytes(s.dataUsedBytes || 0) }}</span>
+                </div>
+                <div>
+                  <span class="text-light-gray">الحد:</span>
+                  <span class="font-semibold text-charcoal mr-1">{{ s.dataLimitGB > 0 ? s.dataLimitGB + ' GB' : 'غير محدود' }}</span>
+                </div>
+                <div>
+                  <span class="text-light-gray">المتبقي:</span>
+                  <span class="font-semibold text-jazan-green mr-1">{{ getRemainingGB(s.dataUsedBytes || 0, s.dataLimitGB) }}</span>
+                </div>
+              </div>
+              <div v-if="s.dataLimitGB > 0" class="w-full bg-gray-200 rounded-full h-2">
+                <div 
+                  class="h-2 rounded-full transition-all duration-300"
+                  :class="getDataUsagePercent(s.dataUsedBytes || 0, s.dataLimitGB) >= 90 ? 'bg-red-coral' : getDataUsagePercent(s.dataUsedBytes || 0, s.dataLimitGB) >= 70 ? 'bg-warning-yellow' : 'bg-jazan-green'"
+                  :style="{ width: getDataUsagePercent(s.dataUsedBytes || 0, s.dataLimitGB) + '%' }"
+                ></div>
+              </div>
+              <p v-if="s.dataLimitExceeded" class="text-red-coral text-xs mt-2 font-semibold">
+                ⚠️ تم تجاوز حد البيانات
+              </p>
+            </div>
           </div>
         </div>
         <p v-else class="text-sm text-light-gray">لا يوجد اشتراك</p>

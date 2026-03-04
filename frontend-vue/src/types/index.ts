@@ -116,6 +116,9 @@ export interface SubscriberSubscription {
   endDate: string
   activatedAt: string | null
   suspendedAt: string | null
+  dataUsedBytes: number
+  dataLimitGB: number
+  dataLimitExceeded: boolean
 }
 
 export interface PppoeAccount {
@@ -177,6 +180,10 @@ export interface Subscription {
   cancelledAt: string | null
   cancellationReason: string | null
   remainingDays: number
+  dataUsedBytes: number
+  dataLimitExceeded: boolean
+  dataLimitExceededAt: string | null
+  dataLimitGB: number
 }
 
 export interface CreateSubscriptionCommand {
@@ -284,13 +291,16 @@ export interface ProcessPaymentCommand {
 // ============ Online Users / MikroTik Types ============
 
 export interface ActiveSession {
-  username: string
-  callerId: string
+  id: string
+  name: string
   service: string
-  address: string
-  uptime: string
-  bytesIn: number
-  bytesOut: number
+  callerId: string | null
+  address: string | null
+  uptime: string | null
+  encoding: string | null
+  sessionId: string | null
+  limitBytesIn: number | null
+  limitBytesOut: number | null
 }
 
 export interface MikroTikConnectionRequest {

@@ -8,8 +8,21 @@ import StatusBadge from '@/components/StatusBadge.vue'
 import type { Subscriber } from '@/types'
 
 const store = useSubscriptionsStore()
-const { formatDate } = useFormatters()
+const { formatDate, formatBytes } = useFormatters()
 const myProfile = ref<Subscriber | null>(null)
+
+function getDataUsagePercent(usedBytes: number, limitGB: number): number {
+  if (!limitGB || limitGB <= 0) return 0
+  const limitBytes = limitGB * 1024 * 1024 * 1024
+  return Math.min(100, Math.round((usedBytes / limitBytes) * 100))
+}
+
+function getRemainingGB(usedBytes: number, limitGB: number): string {
+  if (!limitGB || limitGB <= 0) return 'غير محدود'
+  const usedGB = usedBytes / (1024 * 1024 * 1024)
+  const remaining = Math.max(0, limitGB - usedGB)
+  return remaining.toFixed(2) + ' GB'
+}
 
 onMounted(async () => {
   await store.fetchAll()
@@ -36,6 +49,42 @@ onMounted(async () => {
           <div><p class="text-light-gray">تاريخ الانتهاء</p><p class="font-semibold text-charcoal">{{ formatDate(sub.endDate) }}</p></div>
           <div><p class="text-light-gray">الأيام المتبقية</p><p class="font-semibold text-golden-sand-dark">{{ sub.remainingDays }}</p></div>
           <div v-if="sub.activatedAt"><p class="text-light-gray">تاريخ التفعيل</p><p class="font-semibold text-charcoal">{{ formatDate(sub.activatedAt) }}</p></div>
+        </div>
+
+        <!-- Data Usage Section -->
+        <div class="mt-6 pt-4 border-t border-soft-beige">
+          <h4 class="text-sm font-semibold text-coastal-blue mb-3">استهلاك البيانات</h4>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-3">
+            <div>
+              <p class="text-light-gray">المستهلك</p>
+              <p class="font-semibold text-charcoal">{{ formatBytes(sub.dataUsedBytes || 0) }}</p>
+            </div>
+            <div>
+              <p class="text-light-gray">الحد الأقصى</p>
+              <p class="font-semibold text-charcoal">{{ sub.dataLimitGB > 0 ? sub.dataLimitGB + ' GB' : 'غير محدود' }}</p>
+            </div>
+            <div>
+              <p class="text-light-gray">المتبقي</p>
+              <p class="font-semibold text-jazan-green">{{ getRemainingGB(sub.dataUsedBytes || 0, sub.dataLimitGB) }}</p>
+            </div>
+            <div v-if="sub.dataLimitGB > 0">
+              <p class="text-light-gray">نسبة الاستهلاك</p>
+              <p class="font-semibold" :class="getDataUsagePercent(sub.dataUsedBytes || 0, sub.dataLimitGB) >= 90 ? 'text-red-coral' : 'text-golden-sand-dark'">
+                {{ getDataUsagePercent(sub.dataUsedBytes || 0, sub.dataLimitGB) }}%
+              </p>
+            </div>
+          </div>
+          <!-- Progress bar -->
+          <div v-if="sub.dataLimitGB > 0" class="w-full bg-gray-200 rounded-full h-3">
+            <div 
+              class="h-3 rounded-full transition-all duration-300"
+              :class="getDataUsagePercent(sub.dataUsedBytes || 0, sub.dataLimitGB) >= 90 ? 'bg-red-coral' : getDataUsagePercent(sub.dataUsedBytes || 0, sub.dataLimitGB) >= 70 ? 'bg-warning-yellow' : 'bg-jazan-green'"
+              :style="{ width: getDataUsagePercent(sub.dataUsedBytes || 0, sub.dataLimitGB) + '%' }"
+            ></div>
+          </div>
+          <p v-if="sub.dataLimitExceeded" class="text-red-coral text-sm mt-2 font-semibold">
+            ⚠️ تم تجاوز حد البيانات - الاتصال معطل
+          </p>
         </div>
       </div>
     </div>

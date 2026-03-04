@@ -68,7 +68,10 @@ public class GetSubscribersQueryHandler : IRequestHandler<GetSubscribersQuery, P
             s.BillingPeriod?.StartDate ?? DateTime.MinValue,
             s.BillingPeriod?.EndDate ?? DateTime.MinValue,
             s.ActivatedAt,
-            s.SuspendedAt
+            s.SuspendedAt,
+            s.DataUsedBytes,
+            s.Plan?.DataLimitGB ?? 0,
+            s.DataLimitExceeded
         )).ToList() ?? new List<SubscriptionDto>();
 
         var pppoeAccounts = subscriber.PppoeAccounts?.Select(p => new PppoeAccountDto(
@@ -140,7 +143,10 @@ public class GetSubscriberByIdQueryHandler : IRequestHandler<GetSubscriberByIdQu
             s.BillingPeriod?.StartDate ?? DateTime.MinValue,
             s.BillingPeriod?.EndDate ?? DateTime.MinValue,
             s.ActivatedAt,
-            s.SuspendedAt
+            s.SuspendedAt,
+            s.DataUsedBytes,
+            s.Plan?.DataLimitGB ?? 0,
+            s.DataLimitExceeded
         )).ToList() ?? new List<SubscriptionDto>();
 
         var pppoeAccounts = subscriber.PppoeAccounts?.Select(p => new PppoeAccountDto(

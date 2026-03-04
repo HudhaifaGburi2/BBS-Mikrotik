@@ -15,6 +15,10 @@ public class SubscriptionDto : BaseDto
     public DateTime? CancelledAt { get; set; }
     public string? CancellationReason { get; set; }
     public int RemainingDays { get; set; }
+    public long DataUsedBytes { get; set; }
+    public bool DataLimitExceeded { get; set; }
+    public DateTime? DataLimitExceededAt { get; set; }
+    public int DataLimitGB { get; set; }
 }
 
 public class CreateSubscriptionDto

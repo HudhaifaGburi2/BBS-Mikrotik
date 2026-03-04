@@ -3,15 +3,28 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useSubscribersStore } from '@/stores/subscribers'
 import { useToastStore } from '@/stores/toast'
+import { useFormatters } from '@/composables/useFormatters'
 import { useDebounceFn } from '@vueuse/core'
 import AppLoader from '@/components/AppLoader.vue'
 import AppPagination from '@/components/AppPagination.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import type { Subscriber } from '@/types'
 
 const store = useSubscribersStore()
 const toast = useToastStore()
 const router = useRouter()
+const { formatBytes } = useFormatters()
+
+function getSubscriberDataUsage(sub: Subscriber): { used: number; limit: number; percent: number } {
+  const activeSubscription = sub.subscriptions?.find(s => s.status === 'Active')
+  if (!activeSubscription) return { used: 0, limit: 0, percent: 0 }
+  const used = activeSubscription.dataUsedBytes || 0
+  const limit = activeSubscription.dataLimitGB || 0
+  const limitBytes = limit * 1024 * 1024 * 1024
+  const percent = limitBytes > 0 ? Math.min(100, Math.round((used / limitBytes) * 100)) : 0
+  return { used, limit, percent }
+}
 
 const search = ref('')
 const statusFilter = ref('')
@@ -107,6 +120,7 @@ onMounted(async () => {
               <th class="px-6 py-3 text-right text-xs font-medium text-coastal-blue uppercase">الاسم</th>
               <th class="px-6 py-3 text-right text-xs font-medium text-coastal-blue uppercase">البريد</th>
               <th class="px-6 py-3 text-right text-xs font-medium text-coastal-blue uppercase">الهاتف</th>
+              <th class="px-6 py-3 text-right text-xs font-medium text-coastal-blue uppercase">الاستهلاك</th>
               <th class="px-6 py-3 text-right text-xs font-medium text-coastal-blue uppercase">الحالة</th>
               <th class="px-6 py-3 text-right text-xs font-medium text-coastal-blue uppercase">إجراءات</th>
             </tr>
@@ -116,6 +130,19 @@ onMounted(async () => {
               <td class="px-6 py-4 whitespace-nowrap text-sm text-charcoal font-medium">{{ sub.fullName }}</td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-light-gray">{{ sub.email }}</td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-light-gray">{{ sub.phoneNumber }}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm">
+                <div v-if="getSubscriberDataUsage(sub).limit > 0" class="flex flex-col gap-1">
+                  <span class="text-charcoal">{{ formatBytes(getSubscriberDataUsage(sub).used) }} / {{ getSubscriberDataUsage(sub).limit }} GB</span>
+                  <div class="w-20 bg-gray-200 rounded-full h-1.5">
+                    <div 
+                      class="h-1.5 rounded-full"
+                      :class="getSubscriberDataUsage(sub).percent >= 90 ? 'bg-red-coral' : getSubscriberDataUsage(sub).percent >= 70 ? 'bg-warning-yellow' : 'bg-jazan-green'"
+                      :style="{ width: getSubscriberDataUsage(sub).percent + '%' }"
+                    ></div>
+                  </div>
+                </div>
+                <span v-else class="text-light-gray">—</span>
+              </td>
               <td class="px-6 py-4 whitespace-nowrap">
                 <StatusBadge :status="sub.isActive ? 'Active' : 'Suspended'" />
               </td>

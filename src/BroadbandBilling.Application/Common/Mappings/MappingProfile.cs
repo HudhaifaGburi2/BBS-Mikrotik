@@ -25,7 +25,8 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.EndDate, opt => opt.MapFrom(src => src.BillingPeriod.EndDate))
             .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()))
             .ForMember(dest => dest.PlanName, opt => opt.MapFrom(src => src.Plan != null ? src.Plan.Name : string.Empty))
-            .ForMember(dest => dest.RemainingDays, opt => opt.MapFrom(src => src.GetRemainingDays()));
+            .ForMember(dest => dest.RemainingDays, opt => opt.MapFrom(src => src.GetRemainingDays()))
+            .ForMember(dest => dest.DataLimitGB, opt => opt.MapFrom(src => src.Plan != null ? src.Plan.DataLimitGB : 0));
 
         CreateMap<Invoice, InvoiceDto>()
             .ForMember(dest => dest.Subtotal, opt => opt.MapFrom(src => src.Subtotal.Amount))

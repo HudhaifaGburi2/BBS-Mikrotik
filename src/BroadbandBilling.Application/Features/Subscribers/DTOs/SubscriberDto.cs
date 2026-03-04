@@ -32,7 +32,10 @@ public record SubscriptionDto(
     DateTime StartDate,
     DateTime EndDate,
     DateTime? ActivatedAt,
-    DateTime? SuspendedAt
+    DateTime? SuspendedAt,
+    long DataUsedBytes = 0,
+    int DataLimitGB = 0,
+    bool DataLimitExceeded = false
 );
 
 public record PppoeAccountDto(
