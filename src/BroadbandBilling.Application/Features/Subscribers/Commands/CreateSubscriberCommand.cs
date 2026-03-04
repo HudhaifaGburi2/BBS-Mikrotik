@@ -4,6 +4,7 @@ using BroadbandBilling.Application.Interfaces;
 using BroadbandBilling.Domain.Entities;
 using BroadbandBilling.Domain.Enums;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace BroadbandBilling.Application.Features.Subscribers.Commands;
@@ -55,6 +56,30 @@ public class CreateSubscriberCommandHandler : IRequestHandler<CreateSubscriberCo
     {
         // Validate input
         ValidateRequest(request);
+
+        // Check if email already exists in Users table
+        var existingUser = await _dbContext.Users.FirstOrDefaultAsync(u => u.Email == request.Email, cancellationToken);
+        if (existingUser != null)
+        {
+            throw new ArgumentException($"البريد الإلكتروني '{request.Email}' مستخدم بالفعل. الرجاء استخدام بريد إلكتروني آخر.");
+        }
+
+        // Check if email already exists in Subscribers table
+        var existingSubscriber = await _dbContext.Subscribers.FirstOrDefaultAsync(s => s.Email == request.Email, cancellationToken);
+        if (existingSubscriber != null)
+        {
+            throw new ArgumentException($"البريد الإلكتروني '{request.Email}' مستخدم بالفعل لمشترك آخر.");
+        }
+
+        // Check if system username already exists
+        if (request.CreateSystemAccount && !string.IsNullOrEmpty(request.SystemUsername))
+        {
+            var existingUsername = await _dbContext.Users.FirstOrDefaultAsync(u => u.Username == request.SystemUsername, cancellationToken);
+            if (existingUsername != null)
+            {
+                throw new ArgumentException($"اسم المستخدم '{request.SystemUsername}' مستخدم بالفعل. الرجاء اختيار اسم آخر.");
+            }
+        }
 
         // Create subscriber
         var subscriber = Subscriber.Create(
