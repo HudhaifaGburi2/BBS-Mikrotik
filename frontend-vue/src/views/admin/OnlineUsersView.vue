@@ -51,38 +51,44 @@ const sortedSessions = computed(() => {
   })
 })
 
-// Get usage percentage for progress bar (based on data limit if available, otherwise relative to top user)
+// Get usage percentage for progress bar (use backend-computed value or calculate)
 function getUsagePercent(session: ActiveSession): number {
-  const sessionTotal = (session.bytesIn || 0) + (session.bytesOut || 0)
+  // Use backend-computed value if available
+  if (session.usagePercent !== undefined) {
+    return session.usagePercent
+  }
   
-  // If user has a data limit, calculate percentage of limit used
-  if (session.limitBytesIn && session.limitBytesIn > 0) {
-    return Math.min(100, Math.round((sessionTotal / session.limitBytesIn) * 100))
+  // Fallback calculation
+  if (session.hasQuota && session.limitBytesTotal > 0) {
+    return Math.min(100, Math.round((session.bytesUsed / session.limitBytesTotal) * 100))
   }
   
   // Otherwise, calculate relative to top user
   if (sessions.value.length === 0) return 0
-  const maxTotal = Math.max(...sessions.value.map(s => (s.bytesIn || 0) + (s.bytesOut || 0)))
+  const maxTotal = Math.max(...sessions.value.map(s => s.bytesUsed || (s.bytesIn || 0) + (s.bytesOut || 0)))
   if (maxTotal === 0) return 0
+  const sessionTotal = session.bytesUsed || (session.bytesIn || 0) + (session.bytesOut || 0)
   return Math.round((sessionTotal / maxTotal) * 100)
 }
 
-// Check if user has a data limit
+// Check if user has a data limit (use backend-computed value)
 function hasDataLimit(session: ActiveSession): boolean {
-  return (session.limitBytesIn != null && session.limitBytesIn > 0) || 
-         (session.limitBytesOut != null && session.limitBytesOut > 0)
+  return session.hasQuota ?? (session.limitBytesTotal > 0)
 }
 
-// Get remaining bytes (limit - used)
+// Get remaining bytes (use backend-computed value)
 function getRemainingBytes(session: ActiveSession): number {
-  const used = (session.bytesIn || 0) + (session.bytesOut || 0)
-  const limit = session.limitBytesIn || session.limitBytesOut || 0
-  return Math.max(0, limit - used)
+  return session.bytesRemaining ?? Math.max(0, (session.limitBytesTotal || 0) - (session.bytesUsed || 0))
 }
 
-// Get data limit (use limitBytesIn as the total limit)
+// Get data limit
 function getDataLimit(session: ActiveSession): number {
-  return session.limitBytesIn || session.limitBytesOut || 0
+  return session.limitBytesTotal || 0
+}
+
+// Check if quota is exceeded
+function isQuotaExceeded(session: ActiveSession): boolean {
+  return session.isQuotaExceeded ?? (hasDataLimit(session) && getRemainingBytes(session) <= 0)
 }
 
 // Format uptime for display
@@ -312,7 +318,10 @@ onUnmounted(() => {
                   <p class="font-semibold text-charcoal">{{ s.name }}</p>
                   <p class="text-xs text-light-gray font-mono">{{ s.address || '—' }}</p>
                 </div>
-                <span v-if="index === 0 && sessions.length > 1" class="px-2 py-0.5 bg-golden-sand/20 text-golden-sand-dark text-xs rounded-full font-medium">
+                <span v-if="isQuotaExceeded(s)" class="px-2 py-0.5 bg-red-coral/20 text-red-coral text-xs rounded-full font-medium animate-pulse">
+                  ⚠️ تجاوز الحصة
+                </span>
+                <span v-else-if="index === 0 && sessions.length > 1" class="px-2 py-0.5 bg-golden-sand/20 text-golden-sand-dark text-xs rounded-full font-medium">
                   الأعلى استهلاكاً
                 </span>
               </div>

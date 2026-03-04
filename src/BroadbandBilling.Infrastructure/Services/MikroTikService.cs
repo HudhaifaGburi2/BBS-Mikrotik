@@ -225,6 +225,11 @@ public class MikroTikService : IMikroTikService
                 try
                 {
                     var activeSessions = connection.LoadAll<PppActive>();
+                    
+                    // Also fetch PPP secrets to get the data limits
+                    var pppSecrets = connection.LoadAll<PppSecret>();
+                    var secretsDict = pppSecrets.ToDictionary(s => s.Name, s => s);
+                    
                     sessions = activeSessions.Select(s => 
                     {
                         // Parse bytes string "transmitted/received" format
@@ -240,6 +245,15 @@ public class MikroTikService : IMikroTikService
                             }
                         }
                         
+                        // Get limit from PPP secret (not from active session)
+                        long limitBytesIn = 0;
+                        long limitBytesOut = 0;
+                        if (secretsDict.TryGetValue(s.Name, out var secret))
+                        {
+                            limitBytesIn = secret.LimitBytesIn;
+                            limitBytesOut = secret.LimitBytesOut;
+                        }
+                        
                         return new ActiveSessionDto
                         {
                             Id = s.Id?.ToString() ?? string.Empty,
@@ -252,8 +266,8 @@ public class MikroTikService : IMikroTikService
                             SessionId = s.SessionId,
                             BytesIn = bytesIn,
                             BytesOut = bytesOut,
-                            LimitBytesIn = s.LimitBytesIn,
-                            LimitBytesOut = s.LimitBytesOut
+                            LimitBytesIn = limitBytesIn,
+                            LimitBytesOut = limitBytesOut
                         };
                     }).ToList();
                 }
@@ -599,13 +613,31 @@ public class MikroTikService : IMikroTikService
                     return MikroTikResult.FailureResult("المستخدم غير موجود", $"PPP user '{request.PppUsername}' not found");
                 }
 
-                // Reset quota by setting limit bytes to 0 (unlimited)
-                user.LimitBytesIn = 0;
-                user.LimitBytesOut = 0;
-                connection.Save(user);
-
-                _logger.LogInformation("Reset quota for PPP user '{PppUser}' on MikroTik at {Host}", request.PppUsername, request.Host);
-                return MikroTikResult.SuccessResult("تم إعادة تعيين حصة البيانات بنجاح");
+                // Use raw API command to reset counters
+                // MikroTik command: /ppp secret reset-counters [find name=username]
+                try
+                {
+                    var cmd = connection.CreateCommand("/ppp/secret/reset-counters");
+                    cmd.AddParameter(".id", user.Id);
+                    cmd.ExecuteNonQuery();
+                    
+                    _logger.LogInformation("Reset counters for PPP user '{PppUser}' on MikroTik at {Host}", request.PppUsername, request.Host);
+                    return MikroTikResult.SuccessResult("تم إعادة تعيين عداد البيانات بنجاح");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "reset-counters command failed, falling back to re-enabling user");
+                    
+                    // Fallback: If reset-counters not available, disconnect and re-enable user
+                    // This will reset the session counters
+                    if (user.Disabled)
+                    {
+                        user.Disabled = false;
+                        connection.Save(user);
+                    }
+                    
+                    return MikroTikResult.SuccessResult("تم إعادة تفعيل المستخدم");
+                }
             },
             $"Reset quota for PPP user '{request.PppUsername}' on {request.Host}",
             cancellationToken

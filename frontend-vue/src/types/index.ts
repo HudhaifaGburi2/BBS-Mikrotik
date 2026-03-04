@@ -301,8 +301,14 @@ export interface ActiveSession {
   sessionId: string | null
   bytesIn: number
   bytesOut: number
-  limitBytesIn: number | null
-  limitBytesOut: number | null
+  limitBytesIn: number
+  limitBytesOut: number
+  limitBytesTotal: number
+  bytesUsed: number
+  bytesRemaining: number
+  hasQuota: boolean
+  isQuotaExceeded: boolean
+  usagePercent: number
 }
 
 export interface MikroTikConnectionRequest {

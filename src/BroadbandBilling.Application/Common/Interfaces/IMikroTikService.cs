@@ -135,8 +135,14 @@ public record ActiveSessionDto
     public string? SessionId { get; init; }
     public long BytesIn { get; init; }
     public long BytesOut { get; init; }
-    public long? LimitBytesIn { get; init; }
-    public long? LimitBytesOut { get; init; }
+    public long LimitBytesIn { get; init; }
+    public long LimitBytesOut { get; init; }
+    public long LimitBytesTotal => LimitBytesIn; // Use LimitBytesIn as total limit (ISP standard)
+    public long BytesUsed => BytesIn + BytesOut;
+    public long BytesRemaining => LimitBytesTotal > 0 ? Math.Max(0, LimitBytesTotal - BytesUsed) : 0;
+    public bool HasQuota => LimitBytesTotal > 0;
+    public bool IsQuotaExceeded => HasQuota && BytesUsed >= LimitBytesTotal;
+    public int UsagePercent => HasQuota ? (int)Math.Min(100, (BytesUsed * 100) / LimitBytesTotal) : 0;
 }
 
 public record PppProfileDto

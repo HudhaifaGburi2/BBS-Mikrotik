@@ -199,6 +199,23 @@ public class Subscription : IEntity
         UpdatedAt = DateTime.UtcNow;
     }
 
+    public void AccumulateDataUsage(long additionalBytes)
+    {
+        if (additionalBytes > 0)
+        {
+            DataUsedBytes += additionalBytes;
+            UpdatedAt = DateTime.UtcNow;
+        }
+    }
+
+    public void ResetDataUsage()
+    {
+        DataUsedBytes = 0;
+        DataLimitExceeded = false;
+        DataLimitExceededAt = null;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
     public void MarkDataLimitExceeded()
     {
         DataLimitExceeded = true;
@@ -206,9 +223,35 @@ public class Subscription : IEntity
         UpdatedAt = DateTime.UtcNow;
     }
 
+    public void ClearDataLimitExceeded()
+    {
+        DataLimitExceeded = false;
+        DataLimitExceededAt = null;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
     public double GetDataUsedGB()
     {
         return DataUsedBytes / (1024.0 * 1024.0 * 1024.0);
+    }
+
+    public long GetDataLimitBytes(int dataLimitGB)
+    {
+        return (long)dataLimitGB * 1024 * 1024 * 1024;
+    }
+
+    public long GetRemainingBytes(int dataLimitGB)
+    {
+        if (dataLimitGB <= 0) return long.MaxValue; // Unlimited
+        var limitBytes = GetDataLimitBytes(dataLimitGB);
+        return Math.Max(0, limitBytes - DataUsedBytes);
+    }
+
+    public int GetUsagePercent(int dataLimitGB)
+    {
+        if (dataLimitGB <= 0) return 0;
+        var limitBytes = GetDataLimitBytes(dataLimitGB);
+        return (int)Math.Min(100, (DataUsedBytes * 100) / limitBytes);
     }
 
     public bool HasExceededDataLimit(int dataLimitGB)
