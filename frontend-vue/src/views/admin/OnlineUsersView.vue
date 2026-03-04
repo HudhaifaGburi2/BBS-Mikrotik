@@ -5,12 +5,12 @@ import { useToastStore } from '@/stores/toast'
 import { useFormatters } from '@/composables/useFormatters'
 import AppLoader from '@/components/AppLoader.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
-import type { ActiveSession } from '@/types'
+import type { EnrichedActiveSession } from '@/types'
 
 const toast = useToastStore()
 const { formatBytes } = useFormatters()
 
-const sessions = ref<ActiveSession[]>([])
+const sessions = ref<EnrichedActiveSession[]>([])
 const isLoading = ref(false)
 const hasLoaded = ref(false)
 const errorMessage = ref('')
@@ -51,44 +51,44 @@ const sortedSessions = computed(() => {
   })
 })
 
-// Get usage percentage for progress bar (use backend-computed value or calculate)
-function getUsagePercent(session: ActiveSession): number {
+// Get usage percentage for progress bar
+function getUsagePercent(session: EnrichedActiveSession): number {
   // Use backend-computed value if available
-  if (session.usagePercent !== undefined) {
-    return session.usagePercent
+  if (session.dataUsagePercent !== undefined) {
+    return session.dataUsagePercent
   }
   
   // Fallback calculation
-  if (session.hasQuota && session.limitBytesTotal > 0) {
-    return Math.min(100, Math.round((session.bytesUsed / session.limitBytesTotal) * 100))
+  if (!session.isUnlimited && session.planDataLimitBytes > 0) {
+    return Math.min(100, Math.round((session.totalDataUsedBytes / session.planDataLimitBytes) * 100))
   }
   
   // Otherwise, calculate relative to top user
   if (sessions.value.length === 0) return 0
-  const maxTotal = Math.max(...sessions.value.map(s => s.bytesUsed || (s.bytesIn || 0) + (s.bytesOut || 0)))
+  const maxTotal = Math.max(...sessions.value.map(s => s.totalDataUsedBytes || s.sessionBytesUsed || 0))
   if (maxTotal === 0) return 0
-  const sessionTotal = session.bytesUsed || (session.bytesIn || 0) + (session.bytesOut || 0)
+  const sessionTotal = session.totalDataUsedBytes || session.sessionBytesUsed || 0
   return Math.round((sessionTotal / maxTotal) * 100)
 }
 
-// Check if user has a data limit (use backend-computed value)
-function hasDataLimit(session: ActiveSession): boolean {
-  return session.hasQuota ?? (session.limitBytesTotal > 0)
+// Check if user has a data limit
+function hasDataLimit(session: EnrichedActiveSession): boolean {
+  return !session.isUnlimited && session.planDataLimitBytes > 0
 }
 
-// Get remaining bytes (use backend-computed value)
-function getRemainingBytes(session: ActiveSession): number {
-  return session.bytesRemaining ?? Math.max(0, (session.limitBytesTotal || 0) - (session.bytesUsed || 0))
+// Get remaining bytes
+function getRemainingBytes(session: EnrichedActiveSession): number {
+  return session.dataRemainingBytes ?? Math.max(0, (session.planDataLimitBytes || 0) - (session.totalDataUsedBytes || 0))
 }
 
 // Get data limit
-function getDataLimit(session: ActiveSession): number {
-  return session.limitBytesTotal || 0
+function getDataLimit(session: EnrichedActiveSession): number {
+  return session.planDataLimitBytes || 0
 }
 
 // Check if quota is exceeded
-function isQuotaExceeded(session: ActiveSession): boolean {
-  return session.isQuotaExceeded ?? (hasDataLimit(session) && getRemainingBytes(session) <= 0)
+function isQuotaExceeded(session: EnrichedActiveSession): boolean {
+  return session.dataLimitExceeded ?? (hasDataLimit(session) && getRemainingBytes(session) <= 0)
 }
 
 // Format uptime for display
@@ -102,7 +102,8 @@ async function loadSessions() {
   isLoading.value = true
   errorMessage.value = ''
   try {
-    const res = await apiPost<{ success: boolean; data: ActiveSession[]; message: string }>('/mikrotik/active-sessions', {})
+    // Use enriched endpoint to get SQL subscription data
+    const res = await apiPost<{ success: boolean; data: EnrichedActiveSession[]; message: string }>('/mikrotik/active-sessions/enriched', {})
     hasLoaded.value = true
     lastRefresh.value = new Date()
     if (res.data?.success && res.data.data) {
@@ -334,6 +335,14 @@ onUnmounted(() => {
 
               <!-- Data Usage -->
               <div class="flex-1">
+                <!-- Plan Name Badge -->
+                <div v-if="s.planName" class="mb-2">
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-golden-sand/20 text-golden-sand-dark">
+                    {{ s.planName }}
+                  </span>
+                  <span v-if="s.isUnlimited" class="mr-2 text-xs text-light-gray">غير محدود</span>
+                </div>
+                
                 <div class="grid gap-4 mb-2" :class="hasDataLimit(s) ? 'grid-cols-4' : 'grid-cols-3'">
                   <div class="text-center">
                     <p class="text-xs text-light-gray mb-1">تحميل ↓</p>
@@ -345,7 +354,7 @@ onUnmounted(() => {
                   </div>
                   <div class="text-center">
                     <p class="text-xs text-light-gray mb-1">الإجمالي</p>
-                    <p class="font-bold text-golden-sand-dark">{{ formatBytes((s.bytesIn || 0) + (s.bytesOut || 0)) }}</p>
+                    <p class="font-bold text-golden-sand-dark">{{ formatBytes(s.totalDataUsedBytes || s.sessionBytesUsed || 0) }}</p>
                   </div>
                   <div v-if="hasDataLimit(s)" class="text-center">
                     <p class="text-xs text-light-gray mb-1">المتبقي</p>

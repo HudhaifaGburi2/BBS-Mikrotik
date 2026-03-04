@@ -311,6 +311,66 @@ export interface ActiveSession {
   usagePercent: number
 }
 
+export interface EnrichedPppUser {
+  // MikroTik data
+  id: string
+  name: string
+  password: string
+  profile: string
+  service: string
+  disabled: boolean
+  remoteAddress: string | null
+  localAddress: string | null
+  callerId: string | null
+  comment: string | null
+  limitBytesIn: number
+  limitBytesOut: number
+  limitBytesTotal: number
+  isOnline: boolean
+  lastLoggedOut: string | null
+  
+  // SQL subscription data
+  subscriptionId: string | null
+  subscriptionStatus: string | null
+  planName: string | null
+  planDataLimitGB: number
+  planDataLimitBytes: number
+  dataUsedBytes: number
+  dataRemainingBytes: number
+  dataUsagePercent: number
+  isUnlimited: boolean
+  dataLimitExceeded: boolean
+  isSuspended: boolean
+}
+
+export interface EnrichedActiveSession {
+  // MikroTik session data
+  id: string
+  name: string
+  service: string
+  callerId: string | null
+  address: string | null
+  uptime: string | null
+  encoding: string | null
+  sessionId: string | null
+  bytesIn: number
+  bytesOut: number
+  sessionBytesUsed: number
+  limitBytesIn: number
+  limitBytesOut: number
+  
+  // SQL subscription data
+  subscriptionId: string | null
+  planName: string | null
+  planDataLimitGB: number
+  planDataLimitBytes: number
+  totalDataUsedBytes: number
+  dataRemainingBytes: number
+  dataUsagePercent: number
+  isUnlimited: boolean
+  dataLimitExceeded: boolean
+}
+
 export interface MikroTikConnectionRequest {
   host: string
   port: number

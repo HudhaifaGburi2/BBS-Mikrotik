@@ -11,6 +11,25 @@ interface PppUser {
   disabled: boolean
   remoteAddress: string | null
   localAddress: string | null
+  callerId: string | null
+  comment: string | null
+  limitBytesIn: number
+  limitBytesOut: number
+  limitBytesTotal: number
+  isOnline: boolean
+  lastLoggedOut: string | null
+  // Enriched SQL data
+  subscriptionId?: string | null
+  subscriptionStatus?: string | null
+  planName?: string | null
+  planDataLimitGB?: number
+  planDataLimitBytes?: number
+  dataUsedBytes?: number
+  dataRemainingBytes?: number
+  dataUsagePercent?: number
+  isUnlimited?: boolean
+  dataLimitExceeded?: boolean
+  isSuspended?: boolean
 }
 
 interface PppProfile {
@@ -74,7 +93,8 @@ export const useMikroTikStore = defineStore('mikrotik', () => {
     isLoading.value = true
     errorMessage.value = ''
     try {
-      const res = await apiPost<MikroTikResponse<PppUser[]>>('/mikrotik/ppp-users', {})
+      // Use enriched endpoint to get SQL subscription data
+      const res = await apiPost<MikroTikResponse<PppUser[]>>('/mikrotik/ppp-users/enriched', {})
       if (res.data?.success && res.data.data) {
         pppUsers.value = res.data.data
         isConnected.value = true

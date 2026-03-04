@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useSubscriptionsStore } from '@/stores/subscriptions'
 import { useInvoicesStore } from '@/stores/invoices'
@@ -12,9 +12,24 @@ import type { Subscriber } from '@/types'
 const auth = useAuthStore()
 const subscriptionsStore = useSubscriptionsStore()
 const invoicesStore = useInvoicesStore()
-const { formatCurrency, formatDate } = useFormatters()
+const { formatCurrency, formatDate, formatBytes } = useFormatters()
 const isLoading = ref(false)
 const myProfile = ref<Subscriber | null>(null)
+
+// Quota calculations
+const currentSub = computed(() => subscriptionsStore.subscriptions[0] || null)
+
+function getDataUsagePercent(usedBytes: number, limitGB: number): number {
+  if (!limitGB || limitGB <= 0) return 0
+  const limitBytes = limitGB * 1024 * 1024 * 1024
+  return Math.min(100, Math.round((usedBytes / limitBytes) * 100))
+}
+
+function getRemainingBytes(usedBytes: number, limitGB: number): number {
+  if (!limitGB || limitGB <= 0) return 0
+  const limitBytes = limitGB * 1024 * 1024 * 1024
+  return Math.max(0, limitBytes - usedBytes)
+}
 
 onMounted(async () => {
   isLoading.value = true
@@ -37,6 +52,53 @@ onMounted(async () => {
   <AppLoader :visible="isLoading" />
   <div>
     <h1 class="text-2xl font-bold text-coastal-blue mb-6">مرحباً، {{ auth.fullName }}</h1>
+
+    <!-- Suspended/Quota Exceeded Alert Banner -->
+    <div v-if="currentSub?.dataLimitExceeded" class="bg-red-100 border border-red-coral rounded-xl p-4 mb-6">
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 rounded-full bg-red-coral/20 flex items-center justify-center">
+          <svg class="w-6 h-6 text-red-coral" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+        </div>
+        <div>
+          <h3 class="text-lg font-bold text-red-coral">تم تجاوز حد البيانات</h3>
+          <p class="text-sm text-red-coral/80">تم إيقاف الاتصال بالإنترنت. يرجى تجديد الاشتراك أو الترقية لباقة أكبر.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Data Quota Card -->
+    <div v-if="currentSub && currentSub.dataLimitGB > 0" class="bg-white rounded-xl shadow-md p-6 border border-soft-beige mb-6">
+      <h3 class="text-lg font-semibold text-coastal-blue mb-4">حصة البيانات</h3>
+      <div class="grid grid-cols-3 gap-4 text-center mb-4">
+        <div>
+          <p class="text-xs text-light-gray mb-1">المستخدم</p>
+          <p class="text-xl font-bold text-golden-sand-dark">{{ formatBytes(currentSub.dataUsedBytes || 0) }}</p>
+        </div>
+        <div>
+          <p class="text-xs text-light-gray mb-1">الحصة</p>
+          <p class="text-xl font-bold text-charcoal">{{ currentSub.dataLimitGB }} GB</p>
+        </div>
+        <div>
+          <p class="text-xs text-light-gray mb-1">المتبقي</p>
+          <p class="text-xl font-bold" :class="getRemainingBytes(currentSub.dataUsedBytes || 0, currentSub.dataLimitGB) > 0 ? 'text-jazan-green' : 'text-red-coral'">
+            {{ formatBytes(getRemainingBytes(currentSub.dataUsedBytes || 0, currentSub.dataLimitGB)) }}
+          </p>
+        </div>
+      </div>
+      <!-- Progress Bar -->
+      <div class="w-full bg-gray-200 rounded-full h-4">
+        <div 
+          class="h-4 rounded-full transition-all duration-300"
+          :class="getDataUsagePercent(currentSub.dataUsedBytes || 0, currentSub.dataLimitGB) >= 90 ? 'bg-red-coral' : getDataUsagePercent(currentSub.dataUsedBytes || 0, currentSub.dataLimitGB) >= 70 ? 'bg-warning-yellow' : 'bg-jazan-green'"
+          :style="{ width: getDataUsagePercent(currentSub.dataUsedBytes || 0, currentSub.dataLimitGB) + '%' }"
+        ></div>
+      </div>
+      <p class="text-center text-sm mt-2" :class="getDataUsagePercent(currentSub.dataUsedBytes || 0, currentSub.dataLimitGB) >= 90 ? 'text-red-coral font-semibold' : 'text-light-gray'">
+        {{ getDataUsagePercent(currentSub.dataUsedBytes || 0, currentSub.dataLimitGB) }}% مستهلك
+      </p>
+    </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
       <div class="bg-white rounded-xl shadow-md p-6 border border-soft-beige">

@@ -22,6 +22,18 @@ interface PppUser {
   limitBytesOut: number
   limitBytesTotal: number
   isOnline: boolean
+  // Enriched fields from SQL
+  subscriptionId?: string | null
+  subscriptionStatus?: string | null
+  planName?: string | null
+  planDataLimitGB?: number
+  planDataLimitBytes?: number
+  dataUsedBytes?: number
+  dataRemainingBytes?: number
+  dataUsagePercent?: number
+  isUnlimited?: boolean
+  dataLimitExceeded?: boolean
+  isSuspended?: boolean
 }
 
 const toast = useToastStore()
@@ -423,11 +435,12 @@ onMounted(() => {
         <table v-else-if="filteredUsers.length" class="min-w-full divide-y divide-gray-200">
           <thead class="bg-gray-50">
             <tr>
-              <th class="px-4 py-3 text-right text-xs font-medium text-coastal-blue uppercase">الحالة</th>
+              <th class="px-4 py-3 text-right text-xs font-medium text-coastal-blue uppercase">الاتصال</th>
               <th class="px-4 py-3 text-right text-xs font-medium text-coastal-blue uppercase">المستخدم</th>
               <th class="px-4 py-3 text-right text-xs font-medium text-coastal-blue uppercase">البروفايل</th>
               <th class="px-4 py-3 text-right text-xs font-medium text-coastal-blue uppercase">حصة البيانات</th>
-              <th class="px-4 py-3 text-right text-xs font-medium text-coastal-blue uppercase">ملاحظات</th>
+              <th class="px-4 py-3 text-right text-xs font-medium text-coastal-blue uppercase">الباقة</th>
+              <th class="px-4 py-3 text-right text-xs font-medium text-coastal-blue uppercase">الحالة</th>
               <th class="px-4 py-3 text-right text-xs font-medium text-coastal-blue uppercase">إجراءات</th>
             </tr>
           </thead>
@@ -470,16 +483,55 @@ onMounted(() => {
                   {{ u.profile }}
                 </span>
               </td>
-              <!-- Quota -->
-              <td class="px-4 py-3 whitespace-nowrap">
-                <div v-if="u.limitBytesTotal > 0" class="text-sm">
-                  <span class="font-medium text-charcoal">{{ formatBytes(u.limitBytesTotal) }}</span>
+              <!-- Quota & Usage -->
+              <td class="px-4 py-3">
+                <div v-if="u.isUnlimited || (u.planDataLimitGB === 0 && u.limitBytesTotal === 0)" class="text-sm">
+                  <span class="text-light-gray">غير محدود</span>
                 </div>
-                <span v-else class="text-xs text-light-gray">غير محدود</span>
+                <div v-else class="text-sm space-y-1">
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs text-light-gray">الحصة:</span>
+                    <span class="font-medium text-charcoal">{{ formatBytes(u.planDataLimitBytes || u.limitBytesTotal) }}</span>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs text-light-gray">المستخدم:</span>
+                    <span class="font-medium text-golden-sand-dark">{{ formatBytes(u.dataUsedBytes || 0) }}</span>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs text-light-gray">المتبقي:</span>
+                    <span class="font-medium" :class="(u.dataRemainingBytes || 0) > 0 ? 'text-jazan-green' : 'text-red-coral'">
+                      {{ formatBytes(u.dataRemainingBytes || 0) }}
+                    </span>
+                  </div>
+                  <!-- Usage Progress Bar -->
+                  <div class="w-full bg-gray-200 rounded-full h-1.5 mt-1">
+                    <div 
+                      class="h-1.5 rounded-full transition-all duration-300"
+                      :class="(u.dataUsagePercent || 0) >= 90 ? 'bg-red-coral' : (u.dataUsagePercent || 0) >= 70 ? 'bg-warning-yellow' : 'bg-jazan-green'"
+                      :style="{ width: Math.min(100, u.dataUsagePercent || 0) + '%' }"
+                    ></div>
+                  </div>
+                  <span v-if="u.dataLimitExceeded" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-coral">
+                    تجاوز الحصة
+                  </span>
+                </div>
               </td>
-              <!-- Comment -->
+              <!-- Plan -->
               <td class="px-4 py-3 whitespace-nowrap">
-                <span class="text-sm text-light-gray">{{ u.comment || '—' }}</span>
+                <span v-if="u.planName" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-golden-sand/20 text-golden-sand-dark">
+                  {{ u.planName }}
+                </span>
+                <span v-else class="text-xs text-light-gray">—</span>
+              </td>
+              <!-- Status -->
+              <td class="px-4 py-3 whitespace-nowrap">
+                <span v-if="u.isSuspended" class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-coral">
+                  موقوف - تجاوز الحصة
+                </span>
+                <span v-else-if="u.subscriptionStatus" class="text-xs text-light-gray">
+                  {{ u.subscriptionStatus }}
+                </span>
+                <span v-else class="text-xs text-light-gray">—</span>
               </td>
               <!-- Actions -->
               <td class="px-4 py-3 whitespace-nowrap">

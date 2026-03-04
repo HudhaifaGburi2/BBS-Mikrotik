@@ -1,6 +1,9 @@
 using BroadbandBilling.Application.Common.Interfaces;
+using BroadbandBilling.Application.Interfaces;
+using BroadbandBilling.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace BroadbandBilling.API.Controllers;
 
@@ -10,11 +13,16 @@ namespace BroadbandBilling.API.Controllers;
 public class MikroTikController : ControllerBase
 {
     private readonly IMikroTikService _mikroTikService;
+    private readonly IApplicationDbContext _dbContext;
     private readonly ILogger<MikroTikController> _logger;
 
-    public MikroTikController(IMikroTikService mikroTikService, ILogger<MikroTikController> logger)
+    public MikroTikController(
+        IMikroTikService mikroTikService, 
+        IApplicationDbContext dbContext,
+        ILogger<MikroTikController> logger)
     {
         _mikroTikService = mikroTikService;
+        _dbContext = dbContext;
         _logger = logger;
     }
 
@@ -229,6 +237,168 @@ public class MikroTikController : ControllerBase
     {
         var result = await _mikroTikService.ResetUserQuotaAsync(request, cancellationToken);
         return ToActionResult(result);
+    }
+
+    /// <summary>
+    /// Get PPP users enriched with SQL subscription data (accumulated usage, remaining quota)
+    /// </summary>
+    [HttpPost("ppp-users/enriched")]
+    public async Task<ActionResult<MikroTikResult<List<EnrichedPppUserDto>>>> GetEnrichedPppUsers(
+        [FromBody] MikroTikConnectionRequest request, CancellationToken cancellationToken)
+    {
+        // Get MikroTik users
+        var mikroTikResult = await _mikroTikService.GetPppUsersAsync(request, cancellationToken);
+        if (!mikroTikResult.Success || mikroTikResult.Data == null)
+        {
+            return StatusCode(500, MikroTikResult<List<EnrichedPppUserDto>>.FailureResult(
+                mikroTikResult.Message, mikroTikResult.Error));
+        }
+
+        // Get SQL subscription data
+        var pppoeAccounts = await _dbContext.PppoeAccounts
+            .Include(p => p.Subscription)
+                .ThenInclude(s => s.Plan)
+            .ToListAsync(cancellationToken);
+
+        var accountsDict = pppoeAccounts.ToDictionary(p => p.Username, p => p);
+
+        // Enrich MikroTik users with SQL data
+        var enrichedUsers = mikroTikResult.Data.Select(u =>
+        {
+            var enriched = new EnrichedPppUserDto
+            {
+                Id = u.Id,
+                Name = u.Name,
+                Password = u.Password,
+                Profile = u.Profile,
+                Service = u.Service,
+                Disabled = u.Disabled,
+                RemoteAddress = u.RemoteAddress,
+                LocalAddress = u.LocalAddress,
+                CallerId = u.CallerId,
+                Comment = u.Comment,
+                LimitBytesIn = u.LimitBytesIn,
+                LimitBytesOut = u.LimitBytesOut,
+                LimitBytesTotal = u.LimitBytesTotal,
+                IsOnline = u.IsOnline,
+                LastLoggedOut = u.LastLoggedOut
+            };
+
+            // Enrich with SQL data if available
+            if (accountsDict.TryGetValue(u.Name, out var account) && account.Subscription != null)
+            {
+                var subscription = account.Subscription;
+                var plan = subscription.Plan;
+
+                enriched.SubscriptionId = subscription.Id;
+                enriched.SubscriptionStatus = subscription.Status.ToString();
+                enriched.PlanName = plan?.Name;
+                enriched.PlanDataLimitGB = plan?.DataLimitGB ?? 0;
+                enriched.PlanDataLimitBytes = plan != null ? (long)plan.DataLimitGB * 1024 * 1024 * 1024 : 0;
+                enriched.DataUsedBytes = subscription.DataUsedBytes;
+                enriched.DataRemainingBytes = plan != null && plan.DataLimitGB > 0 
+                    ? Math.Max(0, enriched.PlanDataLimitBytes - subscription.DataUsedBytes) 
+                    : 0;
+                enriched.DataUsagePercent = plan != null && plan.DataLimitGB > 0 
+                    ? (int)Math.Min(100, (subscription.DataUsedBytes * 100) / enriched.PlanDataLimitBytes) 
+                    : 0;
+                enriched.IsUnlimited = plan == null || plan.DataLimitGB == 0;
+                enriched.DataLimitExceeded = subscription.DataLimitExceeded;
+                enriched.IsSuspended = subscription.Status == SubscriptionStatus.Suspended;
+            }
+            else
+            {
+                // No SQL data - use MikroTik limit as fallback
+                enriched.IsUnlimited = u.LimitBytesTotal == 0;
+            }
+
+            return enriched;
+        }).ToList();
+
+        return Ok(MikroTikResult<List<EnrichedPppUserDto>>.SuccessResult(
+            enrichedUsers, "تم جلب المستخدمين مع بيانات الاشتراك"));
+    }
+
+    /// <summary>
+    /// Get active sessions enriched with SQL subscription data
+    /// </summary>
+    [HttpPost("active-sessions/enriched")]
+    public async Task<ActionResult<MikroTikResult<List<EnrichedActiveSessionDto>>>> GetEnrichedActiveSessions(
+        [FromBody] MikroTikConnectionRequest request, CancellationToken cancellationToken)
+    {
+        // Get active sessions from MikroTik
+        var sessionsResult = await _mikroTikService.GetActiveSessionsAsync(request, cancellationToken);
+        if (!sessionsResult.Success || sessionsResult.Data == null)
+        {
+            return StatusCode(500, MikroTikResult<List<EnrichedActiveSessionDto>>.FailureResult(
+                sessionsResult.Message, sessionsResult.Error));
+        }
+
+        // Get SQL subscription data
+        var pppoeAccounts = await _dbContext.PppoeAccounts
+            .Include(p => p.Subscription)
+                .ThenInclude(s => s.Plan)
+            .ToListAsync(cancellationToken);
+
+        var accountsDict = pppoeAccounts.ToDictionary(p => p.Username, p => p);
+
+        // Enrich sessions with SQL data
+        var enrichedSessions = sessionsResult.Data.Select(s =>
+        {
+            var enriched = new EnrichedActiveSessionDto
+            {
+                Id = s.Id,
+                Name = s.Name,
+                Service = s.Service,
+                CallerId = s.CallerId,
+                Address = s.Address,
+                Uptime = s.Uptime,
+                Encoding = s.Encoding,
+                SessionId = s.SessionId,
+                BytesIn = s.BytesIn,
+                BytesOut = s.BytesOut,
+                SessionBytesUsed = s.BytesUsed,
+                LimitBytesIn = s.LimitBytesIn,
+                LimitBytesOut = s.LimitBytesOut
+            };
+
+            // Enrich with SQL data if available
+            if (accountsDict.TryGetValue(s.Name, out var account) && account.Subscription != null)
+            {
+                var subscription = account.Subscription;
+                var plan = subscription.Plan;
+
+                enriched.SubscriptionId = subscription.Id;
+                enriched.PlanName = plan?.Name;
+                enriched.PlanDataLimitGB = plan?.DataLimitGB ?? 0;
+                enriched.PlanDataLimitBytes = plan != null ? (long)plan.DataLimitGB * 1024 * 1024 * 1024 : 0;
+                
+                // Total usage = SQL accumulated + current session bytes
+                // Note: Current session bytes are already being accumulated by background job
+                // So we use SQL total which includes current session
+                enriched.TotalDataUsedBytes = subscription.DataUsedBytes;
+                
+                enriched.DataRemainingBytes = plan != null && plan.DataLimitGB > 0 
+                    ? Math.Max(0, enriched.PlanDataLimitBytes - subscription.DataUsedBytes) 
+                    : 0;
+                enriched.DataUsagePercent = plan != null && plan.DataLimitGB > 0 
+                    ? (int)Math.Min(100, (subscription.DataUsedBytes * 100) / enriched.PlanDataLimitBytes) 
+                    : 0;
+                enriched.IsUnlimited = plan == null || plan.DataLimitGB == 0;
+                enriched.DataLimitExceeded = subscription.DataLimitExceeded;
+            }
+            else
+            {
+                // No SQL data - use session bytes only
+                enriched.TotalDataUsedBytes = s.BytesUsed;
+                enriched.IsUnlimited = s.LimitBytesIn == 0;
+            }
+
+            return enriched;
+        }).ToList();
+
+        return Ok(MikroTikResult<List<EnrichedActiveSessionDto>>.SuccessResult(
+            enrichedSessions, "تم جلب الجلسات النشطة مع بيانات الاشتراك"));
     }
 
     #endregion

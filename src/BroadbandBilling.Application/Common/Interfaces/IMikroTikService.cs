@@ -176,3 +176,71 @@ public class UserSessionDto
     public TimeSpan? Uptime { get; set; }
     public bool IsOnline { get; set; }
 }
+
+/// <summary>
+/// PPP User enriched with SQL subscription data
+/// </summary>
+public class EnrichedPppUserDto
+{
+    // MikroTik data
+    public string Id { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string Password { get; set; } = string.Empty;
+    public string Profile { get; set; } = string.Empty;
+    public string Service { get; set; } = string.Empty;
+    public bool Disabled { get; set; }
+    public string? RemoteAddress { get; set; }
+    public string? LocalAddress { get; set; }
+    public string? CallerId { get; set; }
+    public string? Comment { get; set; }
+    public long LimitBytesIn { get; set; }
+    public long LimitBytesOut { get; set; }
+    public long LimitBytesTotal { get; set; }
+    public bool IsOnline { get; set; }
+    public string? LastLoggedOut { get; set; }
+    
+    // SQL subscription data
+    public Guid? SubscriptionId { get; set; }
+    public string? SubscriptionStatus { get; set; }
+    public string? PlanName { get; set; }
+    public int PlanDataLimitGB { get; set; }
+    public long PlanDataLimitBytes { get; set; }
+    public long DataUsedBytes { get; set; }
+    public long DataRemainingBytes { get; set; }
+    public int DataUsagePercent { get; set; }
+    public bool IsUnlimited { get; set; }
+    public bool DataLimitExceeded { get; set; }
+    public bool IsSuspended { get; set; }
+}
+
+/// <summary>
+/// Active session enriched with SQL subscription data
+/// </summary>
+public class EnrichedActiveSessionDto
+{
+    // MikroTik session data
+    public string Id { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string Service { get; set; } = string.Empty;
+    public string? CallerId { get; set; }
+    public string? Address { get; set; }
+    public string? Uptime { get; set; }
+    public string? Encoding { get; set; }
+    public string? SessionId { get; set; }
+    public long BytesIn { get; set; }
+    public long BytesOut { get; set; }
+    public long SessionBytesUsed { get; set; }
+    public long LimitBytesIn { get; set; }
+    public long LimitBytesOut { get; set; }
+    
+    // SQL subscription data
+    public Guid? SubscriptionId { get; set; }
+    public string? PlanName { get; set; }
+    public int PlanDataLimitGB { get; set; }
+    public long PlanDataLimitBytes { get; set; }
+    public long TotalDataUsedBytes { get; set; }
+    public long DataRemainingBytes { get; set; }
+    public int DataUsagePercent { get; set; }
+    public bool IsUnlimited { get; set; }
+    public bool DataLimitExceeded { get; set; }
+}

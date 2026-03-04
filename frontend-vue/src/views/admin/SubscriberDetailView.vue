@@ -9,15 +9,26 @@ import { apiPost } from '@/services/http'
 import AppLoader from '@/components/AppLoader.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
 
-interface ActiveSession {
+interface EnrichedSession {
   id: string
   name: string
   address: string | null
   uptime: string | null
   bytesIn: number
   bytesOut: number
-  limitBytesIn: number | null
-  limitBytesOut: number | null
+  sessionBytesUsed: number
+  limitBytesIn: number
+  limitBytesOut: number
+  // SQL subscription data
+  subscriptionId: string | null
+  planName: string | null
+  planDataLimitGB: number
+  planDataLimitBytes: number
+  totalDataUsedBytes: number
+  dataRemainingBytes: number
+  dataUsagePercent: number
+  isUnlimited: boolean
+  dataLimitExceeded: boolean
 }
 
 const route = useRoute()
@@ -28,7 +39,7 @@ const toast = useToastStore()
 const { formatBytes } = useFormatters()
 
 // Real-time session data from MikroTik
-const activeSession = ref<ActiveSession | null>(null)
+const activeSession = ref<EnrichedSession | null>(null)
 const isLoadingSession = ref(false)
 
 function getDataUsagePercent(usedBytes: number, limitGB: number): number {
@@ -66,7 +77,7 @@ async function fetchActiveSession() {
   
   isLoadingSession.value = true
   try {
-    const res = await apiPost<{ success: boolean; data: ActiveSession[] }>('/mikrotik/active-sessions', {})
+    const res = await apiPost<{ success: boolean; data: EnrichedSession[] }>('/mikrotik/active-sessions/enriched', {})
     if (res.data?.success && res.data.data) {
       activeSession.value = res.data.data.find(s => s.name === pppUsername) || null
     }
@@ -242,7 +253,10 @@ async function handleDelete() {
             <div v-if="activeSession" class="mt-3 pt-3 border-t border-coastal-blue/20">
               <div class="flex items-center justify-between mb-2">
                 <p class="text-xs font-semibold text-coastal-blue">الجلسة الحالية (MikroTik)</p>
-                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-jazan-green">
+                <span v-if="activeSession.dataLimitExceeded" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-coral animate-pulse">
+                  ⚠️ تجاوز الحصة
+                </span>
+                <span v-else class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-jazan-green">
                   <span class="w-1.5 h-1.5 rounded-full bg-jazan-green mr-1 animate-pulse"></span>
                   متصل
                 </span>
@@ -259,8 +273,8 @@ async function handleDelete() {
               </div>
               <div class="grid grid-cols-2 gap-3 text-xs mt-2">
                 <div>
-                  <span class="text-light-gray">الإجمالي:</span>
-                  <span class="font-semibold text-charcoal mr-1">{{ formatBytes(activeSession.bytesIn + activeSession.bytesOut) }}</span>
+                  <span class="text-light-gray">الإجمالي المستخدم:</span>
+                  <span class="font-semibold text-charcoal mr-1">{{ formatBytes(activeSession.totalDataUsedBytes || activeSession.sessionBytesUsed || 0) }}</span>
                 </div>
                 <div>
                   <span class="text-light-gray">مدة الاتصال:</span>
@@ -271,18 +285,41 @@ async function handleDelete() {
                 <span class="text-light-gray">عنوان IP:</span>
                 <span class="font-mono font-semibold text-charcoal mr-1">{{ activeSession.address }}</span>
               </div>
-              <div v-if="activeSession.limitBytesIn && activeSession.limitBytesIn > 0" class="mt-2">
-                <p class="text-xs text-light-gray mb-1">حد البيانات (MikroTik):</p>
-                <div class="grid grid-cols-2 gap-2 text-xs">
+              
+              <!-- Quota Information -->
+              <div v-if="!activeSession.isUnlimited && activeSession.planDataLimitBytes > 0" class="mt-3 p-3 bg-gray-50 rounded-lg">
+                <p class="text-xs font-semibold text-charcoal mb-2">حصة البيانات</p>
+                <div class="grid grid-cols-3 gap-2 text-xs mb-2">
                   <div>
-                    <span class="text-light-gray">التحميل:</span>
-                    <span class="font-semibold text-charcoal mr-1">{{ formatBytes(activeSession.limitBytesIn) }}</span>
+                    <span class="text-light-gray">الحصة:</span>
+                    <span class="font-semibold text-charcoal mr-1">{{ formatBytes(activeSession.planDataLimitBytes) }}</span>
                   </div>
                   <div>
-                    <span class="text-light-gray">الرفع:</span>
-                    <span class="font-semibold text-charcoal mr-1">{{ formatBytes(activeSession.limitBytesOut || 0) }}</span>
+                    <span class="text-light-gray">المستخدم:</span>
+                    <span class="font-semibold text-golden-sand-dark mr-1">{{ formatBytes(activeSession.totalDataUsedBytes || 0) }}</span>
+                  </div>
+                  <div>
+                    <span class="text-light-gray">المتبقي:</span>
+                    <span class="font-semibold mr-1" :class="activeSession.dataRemainingBytes > 0 ? 'text-jazan-green' : 'text-red-coral'">
+                      {{ formatBytes(activeSession.dataRemainingBytes || 0) }}
+                    </span>
                   </div>
                 </div>
+                <!-- Progress Bar -->
+                <div class="w-full bg-gray-200 rounded-full h-2">
+                  <div 
+                    class="h-2 rounded-full transition-all duration-300"
+                    :class="activeSession.dataUsagePercent >= 90 ? 'bg-red-coral' : activeSession.dataUsagePercent >= 70 ? 'bg-warning-yellow' : 'bg-jazan-green'"
+                    :style="{ width: Math.min(100, activeSession.dataUsagePercent || 0) + '%' }"
+                  ></div>
+                </div>
+                <p class="text-xs text-center mt-1" :class="activeSession.dataUsagePercent >= 90 ? 'text-red-coral' : 'text-light-gray'">
+                  {{ activeSession.dataUsagePercent || 0 }}% مستهلك
+                </p>
+              </div>
+              <div v-else-if="activeSession.isUnlimited" class="mt-2 text-xs">
+                <span class="text-light-gray">حصة البيانات:</span>
+                <span class="font-semibold text-jazan-green mr-1">غير محدود</span>
               </div>
             </div>
             <div v-else-if="isLoadingSession" class="mt-3 pt-3 border-t border-coastal-blue/20">
