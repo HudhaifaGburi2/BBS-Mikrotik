@@ -38,24 +38,26 @@ public class ChangeSubscriberPlanCommandHandler : IRequestHandler<ChangeSubscrib
         if (newPlan == null)
             throw new NotFoundException($"Plan with ID {request.NewPlanId} not found");
 
-        // Get active subscription
-        var activeSubscription = subscriber.GetActiveSubscription();
-        if (activeSubscription == null)
-            throw new InvalidOperationException("Subscriber has no active subscription to change");
+        // Get current subscription (active, pending, or most recent)
+        var currentSubscription = subscriber.GetCurrentSubscription();
+        if (currentSubscription == null)
+            throw new InvalidOperationException("Subscriber has no subscription to change");
 
         // Create new subscription with new plan
-        var startDate = request.Prorate ? DateTime.UtcNow : activeSubscription.BillingPeriod.EndDate.AddDays(1);
+        var startDate = request.Prorate ? DateTime.UtcNow : currentSubscription.BillingPeriod.EndDate.AddDays(1);
         var newSubscription = Subscription.Create(
             subscriber.Id,
             newPlan.Id,
             startDate,
-            newPlan.BillingCycleDays
+            newPlan.BillingCycleDays,
+            newPlan.Price.Amount,
+            newPlan.BillingCycleHours
         );
 
         await _unitOfWork.Subscriptions.AddAsync(newSubscription, cancellationToken);
 
-        // Suspend old subscription
-        activeSubscription.Suspend($"Changed to plan {newPlan.Name}");
+        // Cancel old subscription (works for any status)
+        currentSubscription.Cancel($"Changed to plan {newPlan.Name}");
 
         // Update PPPoE accounts to use new profile
         foreach (var pppoeAccount in subscriber.PppoeAccounts.Where(p => p.IsEnabled))
@@ -75,7 +77,7 @@ public class ChangeSubscriberPlanCommandHandler : IRequestHandler<ChangeSubscrib
         await _unitOfWork.CommitAsync(cancellationToken);
 
         _logger.LogInformation("Changed plan for subscriber {SubscriberId} from {OldPlan} to {NewPlan}", 
-            subscriber.Id, activeSubscription.Plan?.Name, newPlan.Name);
+            subscriber.Id, currentSubscription.Plan?.Name, newPlan.Name);
 
         return MapToDto(newSubscription, newPlan);
     }

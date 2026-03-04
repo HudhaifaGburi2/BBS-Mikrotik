@@ -78,7 +78,8 @@ public class CreatePaymentSessionCommandHandler : IRequestHandler<CreatePaymentS
                 request.PlanId,
                 DateTime.UtcNow,
                 plan.BillingCycleDays,
-                plan.Price.Amount
+                plan.Price.Amount,
+                plan.BillingCycleHours
             );
 
             await _unitOfWork.Subscriptions.AddAsync(subscription, cancellationToken);

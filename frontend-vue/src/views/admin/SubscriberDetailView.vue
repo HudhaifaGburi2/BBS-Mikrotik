@@ -5,8 +5,20 @@ import { useSubscribersStore } from '@/stores/subscribers'
 import { usePlansStore } from '@/stores/plans'
 import { useToastStore } from '@/stores/toast'
 import { useFormatters } from '@/composables/useFormatters'
+import { apiPost } from '@/services/http'
 import AppLoader from '@/components/AppLoader.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
+
+interface ActiveSession {
+  id: string
+  name: string
+  address: string | null
+  uptime: string | null
+  bytesIn: number
+  bytesOut: number
+  limitBytesIn: number | null
+  limitBytesOut: number | null
+}
 
 const route = useRoute()
 const router = useRouter()
@@ -14,6 +26,10 @@ const store = useSubscribersStore()
 const plansStore = usePlansStore()
 const toast = useToastStore()
 const { formatBytes } = useFormatters()
+
+// Real-time session data from MikroTik
+const activeSession = ref<ActiveSession | null>(null)
+const isLoadingSession = ref(false)
 
 function getDataUsagePercent(usedBytes: number, limitGB: number): number {
   if (!limitGB || limitGB <= 0) return 0
@@ -44,6 +60,23 @@ const isResettingMikroTikPw = ref(false)
 const showChangePlan = ref(false)
 const selectedPlanId = ref('')
 
+async function fetchActiveSession() {
+  const pppUsername = sub.value?.pppoeAccounts?.[0]?.username
+  if (!pppUsername) return
+  
+  isLoadingSession.value = true
+  try {
+    const res = await apiPost<{ success: boolean; data: ActiveSession[] }>('/mikrotik/active-sessions', {})
+    if (res.data?.success && res.data.data) {
+      activeSession.value = res.data.data.find(s => s.name === pppUsername) || null
+    }
+  } catch {
+    // Silently fail - session data is optional
+  } finally {
+    isLoadingSession.value = false
+  }
+}
+
 onMounted(async () => {
   isLoading.value = true
   try {
@@ -51,6 +84,8 @@ onMounted(async () => {
       store.fetchSubscriber(id.value),
       plansStore.fetchPlans(true),
     ])
+    // Fetch active session after subscriber data is loaded
+    await fetchActiveSession()
   } finally {
     isLoading.value = false
   }
@@ -176,7 +211,7 @@ async function handleDelete() {
             
             <!-- Data Usage Section -->
             <div class="mt-3 pt-3 border-t border-jazan-green/20">
-              <p class="text-xs font-semibold text-coastal-blue mb-2">استهلاك البيانات</p>
+              <p class="text-xs font-semibold text-coastal-blue mb-2">استهلاك البيانات (من الاشتراك)</p>
               <div class="grid grid-cols-3 gap-2 text-xs mb-2">
                 <div>
                   <span class="text-light-gray">المستهلك:</span>
@@ -200,6 +235,63 @@ async function handleDelete() {
               </div>
               <p v-if="s.dataLimitExceeded" class="text-red-coral text-xs mt-2 font-semibold">
                 ⚠️ تم تجاوز حد البيانات
+              </p>
+            </div>
+            
+            <!-- Real-time Session Data from MikroTik -->
+            <div v-if="activeSession" class="mt-3 pt-3 border-t border-coastal-blue/20">
+              <div class="flex items-center justify-between mb-2">
+                <p class="text-xs font-semibold text-coastal-blue">الجلسة الحالية (MikroTik)</p>
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-jazan-green">
+                  <span class="w-1.5 h-1.5 rounded-full bg-jazan-green mr-1 animate-pulse"></span>
+                  متصل
+                </span>
+              </div>
+              <div class="grid grid-cols-2 gap-3 text-xs">
+                <div class="bg-coastal-blue/5 rounded-lg p-2">
+                  <p class="text-light-gray mb-1">التحميل (Download)</p>
+                  <p class="font-bold text-coastal-blue text-lg">{{ formatBytes(activeSession.bytesIn) }}</p>
+                </div>
+                <div class="bg-jazan-green/5 rounded-lg p-2">
+                  <p class="text-light-gray mb-1">الرفع (Upload)</p>
+                  <p class="font-bold text-jazan-green text-lg">{{ formatBytes(activeSession.bytesOut) }}</p>
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-3 text-xs mt-2">
+                <div>
+                  <span class="text-light-gray">الإجمالي:</span>
+                  <span class="font-semibold text-charcoal mr-1">{{ formatBytes(activeSession.bytesIn + activeSession.bytesOut) }}</span>
+                </div>
+                <div>
+                  <span class="text-light-gray">مدة الاتصال:</span>
+                  <span class="font-semibold text-charcoal mr-1">{{ activeSession.uptime || '—' }}</span>
+                </div>
+              </div>
+              <div v-if="activeSession.address" class="mt-2 text-xs">
+                <span class="text-light-gray">عنوان IP:</span>
+                <span class="font-mono font-semibold text-charcoal mr-1">{{ activeSession.address }}</span>
+              </div>
+              <div v-if="activeSession.limitBytesIn && activeSession.limitBytesIn > 0" class="mt-2">
+                <p class="text-xs text-light-gray mb-1">حد البيانات (MikroTik):</p>
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                  <div>
+                    <span class="text-light-gray">التحميل:</span>
+                    <span class="font-semibold text-charcoal mr-1">{{ formatBytes(activeSession.limitBytesIn) }}</span>
+                  </div>
+                  <div>
+                    <span class="text-light-gray">الرفع:</span>
+                    <span class="font-semibold text-charcoal mr-1">{{ formatBytes(activeSession.limitBytesOut || 0) }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div v-else-if="isLoadingSession" class="mt-3 pt-3 border-t border-coastal-blue/20">
+              <p class="text-xs text-light-gray">جاري تحميل بيانات الجلسة...</p>
+            </div>
+            <div v-else class="mt-3 pt-3 border-t border-gray-200">
+              <p class="text-xs text-light-gray flex items-center gap-1">
+                <span class="w-2 h-2 rounded-full bg-gray-400"></span>
+                غير متصل حالياً
               </p>
             </div>
           </div>

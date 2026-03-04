@@ -126,7 +126,9 @@ public class CreateSubscriberCommandHandler : IRequestHandler<CreateSubscriberCo
                 subscriber.Id,
                 plan.Id,
                 startDate,
-                plan.BillingCycleDays
+                plan.BillingCycleDays,
+                plan.Price.Amount,
+                plan.BillingCycleHours
             );
 
             await _unitOfWork.Subscriptions.AddAsync(subscription, cancellationToken);

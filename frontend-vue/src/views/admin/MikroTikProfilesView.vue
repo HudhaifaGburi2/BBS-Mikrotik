@@ -6,12 +6,12 @@ import AppLoader from '@/components/AppLoader.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 
 interface PppProfile {
+  id: string
   name: string
-  localAddress: string
-  remoteAddress: string
-  rateLimit: string
-  onlyOne: string
-  comment: string
+  localAddress: string | null
+  remoteAddress: string | null
+  rateLimit: string | null
+  onlyOne: boolean
 }
 
 const toast = useToastStore()

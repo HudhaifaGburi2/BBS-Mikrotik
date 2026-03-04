@@ -16,6 +16,9 @@ public interface IMikroTikService
     Task<MikroTikResult<PppProfileDto>> AddPppProfileAsync(AddProfileRequest request, CancellationToken cancellationToken = default);
     Task<MikroTikResult> UpdatePppProfileAsync(UpdatePppProfileRequest request, CancellationToken cancellationToken = default);
     Task<MikroTikResult> DeletePppProfileAsync(DeleteProfileRequest request, CancellationToken cancellationToken = default);
+    Task<MikroTikResult<PppUserDto>> UpdatePppUserAsync(UpdatePppUserRequest request, CancellationToken cancellationToken = default);
+    Task<MikroTikResult> ResetUserQuotaAsync(ResetUserQuotaRequest request, CancellationToken cancellationToken = default);
+    Task<MikroTikResult<PppUserDto>> GetPppUserAsync(DeletePppUserRequest request, CancellationToken cancellationToken = default);
 }
 
 public record MikroTikResult
@@ -83,6 +86,22 @@ public record DeleteProfileRequest : MikroTikConnectionRequest
     public required string ProfileName { get; init; }
 }
 
+public record UpdatePppUserRequest : MikroTikConnectionRequest
+{
+    public required string PppUsername { get; init; }
+    public string? NewPassword { get; init; }
+    public string? NewProfile { get; init; }
+    public long? LimitBytesIn { get; init; }
+    public long? LimitBytesOut { get; init; }
+    public string? Comment { get; init; }
+    public string? CallerId { get; init; }
+}
+
+public record ResetUserQuotaRequest : MikroTikConnectionRequest
+{
+    public required string PppUsername { get; init; }
+}
+
 public record PppUserDto
 {
     public string Id { get; init; } = string.Empty;
@@ -93,6 +112,13 @@ public record PppUserDto
     public bool Disabled { get; init; }
     public string? RemoteAddress { get; init; }
     public string? LocalAddress { get; init; }
+    public string? CallerId { get; init; }
+    public string? Comment { get; init; }
+    public long LimitBytesIn { get; init; }
+    public long LimitBytesOut { get; init; }
+    public long LimitBytesTotal { get; init; }
+    public bool IsOnline { get; init; }
+    public string? LastLoggedOut { get; init; }
 }
 
 public record ActiveSessionDto
@@ -105,6 +131,8 @@ public record ActiveSessionDto
     public string? Uptime { get; init; }
     public string? Encoding { get; init; }
     public string? SessionId { get; init; }
+    public long BytesIn { get; init; }
+    public long BytesOut { get; init; }
     public long? LimitBytesIn { get; init; }
     public long? LimitBytesOut { get; init; }
 }

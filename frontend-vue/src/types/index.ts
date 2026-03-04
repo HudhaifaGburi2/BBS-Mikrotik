@@ -299,6 +299,8 @@ export interface ActiveSession {
   uptime: string | null
   encoding: string | null
   sessionId: string | null
+  bytesIn: number
+  bytesOut: number
   limitBytesIn: number | null
   limitBytesOut: number | null
 }

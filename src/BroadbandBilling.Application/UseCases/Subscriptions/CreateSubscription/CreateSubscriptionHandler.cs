@@ -43,7 +43,9 @@ public class CreateSubscriptionHandler
             command.SubscriberId,
             command.PlanId,
             command.StartDate,
-            plan.BillingCycleDays
+            plan.BillingCycleDays,
+            plan.Price.Amount,
+            plan.BillingCycleHours
         );
 
         await _unitOfWork.Subscriptions.AddAsync(subscription, cancellationToken);

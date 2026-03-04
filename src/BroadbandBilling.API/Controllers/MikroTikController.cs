@@ -196,6 +196,43 @@ public class MikroTikController : ControllerBase
 
     #endregion
 
+    #region PPP User Management (Advanced)
+
+    /// <summary>
+    /// Get a single PPP user details
+    /// </summary>
+    [HttpPost("ppp-users/get")]
+    public async Task<ActionResult<MikroTikResult<PppUserDto>>> GetPppUser(
+        [FromBody] DeletePppUserRequest request, CancellationToken cancellationToken)
+    {
+        var result = await _mikroTikService.GetPppUserAsync(request, cancellationToken);
+        return ToActionResult(result);
+    }
+
+    /// <summary>
+    /// Update PPP user (password, profile, quota, etc.)
+    /// </summary>
+    [HttpPost("ppp-users/update")]
+    public async Task<ActionResult<MikroTikResult<PppUserDto>>> UpdatePppUser(
+        [FromBody] UpdatePppUserRequest request, CancellationToken cancellationToken)
+    {
+        var result = await _mikroTikService.UpdatePppUserAsync(request, cancellationToken);
+        return ToActionResult(result);
+    }
+
+    /// <summary>
+    /// Reset user quota (set limit bytes to 0/unlimited)
+    /// </summary>
+    [HttpPost("ppp-users/reset-quota")]
+    public async Task<ActionResult<MikroTikResult>> ResetUserQuota(
+        [FromBody] ResetUserQuotaRequest request, CancellationToken cancellationToken)
+    {
+        var result = await _mikroTikService.ResetUserQuotaAsync(request, cancellationToken);
+        return ToActionResult(result);
+    }
+
+    #endregion
+
     #region Helper Methods
 
     private ActionResult ToActionResult(MikroTikResult result)

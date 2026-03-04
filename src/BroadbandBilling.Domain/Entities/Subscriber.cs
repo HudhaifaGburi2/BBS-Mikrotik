@@ -1,3 +1,4 @@
+using BroadbandBilling.Domain.Enums;
 using BroadbandBilling.Domain.Interfaces;
 
 namespace BroadbandBilling.Domain.Entities;
@@ -115,6 +116,14 @@ public class Subscriber : IEntity
     public Subscription? GetActiveSubscription()
     {
         return _subscriptions.FirstOrDefault(s => s.IsActive());
+    }
+    
+    public Subscription? GetCurrentSubscription()
+    {
+        // Get active subscription first, then pending, then most recent
+        return _subscriptions.FirstOrDefault(s => s.IsActive()) 
+            ?? _subscriptions.FirstOrDefault(s => s.Status == SubscriptionStatus.PendingActivation)
+            ?? _subscriptions.OrderByDescending(s => s.CreatedAt).FirstOrDefault();
     }
     
     public void UpdateDeviceInfo(string? deviceName, string? browser, string? os)

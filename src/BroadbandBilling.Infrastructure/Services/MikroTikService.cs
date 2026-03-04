@@ -46,6 +46,19 @@ public class MikroTikService : IMikroTikService
             {
                 using var connection = await CreateConnectionAsync(request);
                 var pppSecrets = connection.LoadAll<PppSecret>();
+                
+                // Get active sessions to determine online status
+                HashSet<string> onlineUsers;
+                try
+                {
+                    var activeSessions = connection.LoadAll<PppActive>();
+                    onlineUsers = activeSessions.Select(s => s.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
+                }
+                catch
+                {
+                    onlineUsers = new HashSet<string>();
+                }
+                
                 var users = pppSecrets.Select(p => new PppUserDto
                 {
                     Id = p.Id?.ToString() ?? string.Empty,
@@ -55,7 +68,13 @@ public class MikroTikService : IMikroTikService
                     Service = p.Service,
                     Disabled = p.Disabled,
                     RemoteAddress = p.RemoteAddress,
-                    LocalAddress = p.LocalAddress
+                    LocalAddress = p.LocalAddress,
+                    CallerId = p.CallerId,
+                    Comment = p.Comment,
+                    LimitBytesIn = p.LimitBytesIn,
+                    LimitBytesOut = p.LimitBytesOut,
+                    LimitBytesTotal = p.LimitBytesIn + p.LimitBytesOut,
+                    IsOnline = onlineUsers.Contains(p.Name)
                 }).ToList();
 
                 _logger.LogInformation("Retrieved {Count} PPP users from MikroTik at {Host}", users.Count, request.Host);
@@ -191,18 +210,36 @@ public class MikroTikService : IMikroTikService
                 try
                 {
                     var activeSessions = connection.LoadAll<PppActive>();
-                    sessions = activeSessions.Select(s => new ActiveSessionDto
+                    sessions = activeSessions.Select(s => 
                     {
-                        Id = s.Id?.ToString() ?? string.Empty,
-                        Name = s.Name,
-                        Service = s.Service,
-                        CallerId = s.CallerId,
-                        Address = s.Address,
-                        Uptime = s.Uptime,
-                        Encoding = s.Encoding,
-                        SessionId = s.SessionId,
-                        LimitBytesIn = s.LimitBytesIn,
-                        LimitBytesOut = s.LimitBytesOut
+                        // Parse bytes string "transmitted/received" format
+                        long bytesOut = 0, bytesIn = 0;
+                        var bytesStr = s.Bytes.ToString();
+                        if (!string.IsNullOrEmpty(bytesStr))
+                        {
+                            var parts = bytesStr.Split('/');
+                            if (parts.Length >= 2)
+                            {
+                                long.TryParse(parts[0], out bytesOut);
+                                long.TryParse(parts[1], out bytesIn);
+                            }
+                        }
+                        
+                        return new ActiveSessionDto
+                        {
+                            Id = s.Id?.ToString() ?? string.Empty,
+                            Name = s.Name,
+                            Service = s.Service,
+                            CallerId = s.CallerId,
+                            Address = s.Address,
+                            Uptime = s.Uptime,
+                            Encoding = s.Encoding,
+                            SessionId = s.SessionId,
+                            BytesIn = bytesIn,
+                            BytesOut = bytesOut,
+                            LimitBytesIn = s.LimitBytesIn,
+                            LimitBytesOut = s.LimitBytesOut
+                        };
                     }).ToList();
                 }
                 catch (NotImplementedException ex) when (ex.Message.Contains("!empty"))
@@ -267,7 +304,11 @@ public class MikroTikService : IMikroTikService
                     return MikroTikResult.FailureResult("المستخدم غير متصل حالياً", $"User '{request.PppUsername}' is not currently connected");
                 }
 
-                connection.Delete(userSession);
+                // PppActive is read-only, use raw API command to remove the session
+                var removeCmd = connection.CreateCommand("/ppp/active/remove");
+                removeCmd.AddParameter(".id", userSession.Id);
+                removeCmd.ExecuteNonQuery();
+                
                 _logger.LogInformation("Disconnected user '{PppUser}' from MikroTik at {Host}", request.PppUsername, request.Host);
                 return MikroTikResult.SuccessResult("تم قطع اتصال المستخدم بنجاح");
             },
@@ -422,6 +463,136 @@ public class MikroTikService : IMikroTikService
                 return MikroTikResult.SuccessResult("تم حذف الباقة بنجاح");
             },
             $"Delete PPP profile '{request.ProfileName}' from {request.Host}",
+            cancellationToken
+        );
+    }
+
+    public async Task<MikroTikResult<PppUserDto>> GetPppUserAsync(DeletePppUserRequest request, CancellationToken cancellationToken = default)
+    {
+        return await ExecuteWithRetryAsync(
+            async () =>
+            {
+                using var connection = await CreateConnectionAsync(request);
+                var pppSecrets = connection.LoadAll<PppSecret>();
+                var user = pppSecrets.FirstOrDefault(p => p.Name == request.PppUsername);
+
+                if (user == null)
+                {
+                    return MikroTikResult<PppUserDto>.FailureResult("المستخدم غير موجود", $"PPP user '{request.PppUsername}' not found");
+                }
+
+                // Check if user is online
+                bool isOnline = false;
+                try
+                {
+                    var activeSessions = connection.LoadAll<PppActive>();
+                    isOnline = activeSessions.Any(s => s.Name.Equals(user.Name, StringComparison.OrdinalIgnoreCase));
+                }
+                catch { }
+
+                var userDto = new PppUserDto
+                {
+                    Id = user.Id?.ToString() ?? string.Empty,
+                    Name = user.Name,
+                    Password = user.Password,
+                    Profile = user.Profile,
+                    Service = user.Service,
+                    Disabled = user.Disabled,
+                    RemoteAddress = user.RemoteAddress,
+                    LocalAddress = user.LocalAddress,
+                    CallerId = user.CallerId,
+                    Comment = user.Comment,
+                    LimitBytesIn = user.LimitBytesIn,
+                    LimitBytesOut = user.LimitBytesOut,
+                    LimitBytesTotal = user.LimitBytesIn + user.LimitBytesOut,
+                    IsOnline = isOnline
+                };
+
+                return MikroTikResult<PppUserDto>.SuccessResult(userDto, "تم جلب بيانات المستخدم بنجاح");
+            },
+            $"Get PPP user '{request.PppUsername}' from {request.Host}",
+            cancellationToken
+        );
+    }
+
+    public async Task<MikroTikResult<PppUserDto>> UpdatePppUserAsync(UpdatePppUserRequest request, CancellationToken cancellationToken = default)
+    {
+        return await ExecuteWithRetryAsync(
+            async () =>
+            {
+                using var connection = await CreateConnectionAsync(request);
+                var pppSecrets = connection.LoadAll<PppSecret>();
+                var user = pppSecrets.FirstOrDefault(p => p.Name == request.PppUsername);
+
+                if (user == null)
+                {
+                    return MikroTikResult<PppUserDto>.FailureResult("المستخدم غير موجود", $"PPP user '{request.PppUsername}' not found");
+                }
+
+                // Update fields if provided
+                if (!string.IsNullOrEmpty(request.NewPassword))
+                    user.Password = request.NewPassword;
+                if (!string.IsNullOrEmpty(request.NewProfile))
+                    user.Profile = request.NewProfile;
+                if (request.LimitBytesIn.HasValue)
+                    user.LimitBytesIn = (int)request.LimitBytesIn.Value;
+                if (request.LimitBytesOut.HasValue)
+                    user.LimitBytesOut = (int)request.LimitBytesOut.Value;
+                if (request.Comment != null)
+                    user.Comment = request.Comment;
+                if (request.CallerId != null)
+                    user.CallerId = request.CallerId;
+
+                connection.Save(user);
+
+                var userDto = new PppUserDto
+                {
+                    Id = user.Id?.ToString() ?? string.Empty,
+                    Name = user.Name,
+                    Password = user.Password,
+                    Profile = user.Profile,
+                    Service = user.Service,
+                    Disabled = user.Disabled,
+                    RemoteAddress = user.RemoteAddress,
+                    LocalAddress = user.LocalAddress,
+                    CallerId = user.CallerId,
+                    Comment = user.Comment,
+                    LimitBytesIn = user.LimitBytesIn,
+                    LimitBytesOut = user.LimitBytesOut,
+                    LimitBytesTotal = user.LimitBytesIn + user.LimitBytesOut
+                };
+
+                _logger.LogInformation("Updated PPP user '{PppUser}' on MikroTik at {Host}", request.PppUsername, request.Host);
+                return MikroTikResult<PppUserDto>.SuccessResult(userDto, "تم تحديث بيانات المستخدم بنجاح");
+            },
+            $"Update PPP user '{request.PppUsername}' on {request.Host}",
+            cancellationToken
+        );
+    }
+
+    public async Task<MikroTikResult> ResetUserQuotaAsync(ResetUserQuotaRequest request, CancellationToken cancellationToken = default)
+    {
+        return await ExecuteWithRetryAsync(
+            async () =>
+            {
+                using var connection = await CreateConnectionAsync(request);
+                var pppSecrets = connection.LoadAll<PppSecret>();
+                var user = pppSecrets.FirstOrDefault(p => p.Name == request.PppUsername);
+
+                if (user == null)
+                {
+                    return MikroTikResult.FailureResult("المستخدم غير موجود", $"PPP user '{request.PppUsername}' not found");
+                }
+
+                // Reset quota by setting limit bytes to 0 (unlimited)
+                user.LimitBytesIn = 0;
+                user.LimitBytesOut = 0;
+                connection.Save(user);
+
+                _logger.LogInformation("Reset quota for PPP user '{PppUser}' on MikroTik at {Host}", request.PppUsername, request.Host);
+                return MikroTikResult.SuccessResult("تم إعادة تعيين حصة البيانات بنجاح");
+            },
+            $"Reset quota for PPP user '{request.PppUsername}' on {request.Host}",
             cancellationToken
         );
     }

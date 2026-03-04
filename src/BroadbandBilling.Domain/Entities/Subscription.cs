@@ -41,7 +41,7 @@ public class Subscription : IEntity
         PaymentTransactions = new List<PaymentTransaction>();
     }
 
-    private Subscription(Guid subscriberId, Guid planId, DateTime startDate, int billingCycleDays, decimal amount)
+    private Subscription(Guid subscriberId, Guid planId, DateTime startDate, int billingCycleDays, int? billingCycleHours, decimal amount)
     {
         Id = Guid.NewGuid();
         SubscriberId = subscriberId;
@@ -49,7 +49,12 @@ public class Subscription : IEntity
         Subscriber = null!;
         Plan = null!;
         PaymentTransactions = new List<PaymentTransaction>();
-        BillingPeriod = DateRange.Create(startDate, startDate.AddDays(billingCycleDays - 1));
+        
+        // Calculate end date based on days and hours
+        var totalHours = (billingCycleDays * 24) + (billingCycleHours ?? 0);
+        var endDate = startDate.AddHours(totalHours).AddSeconds(-1);
+        BillingPeriod = DateRange.Create(startDate, endDate);
+        
         Status = SubscriptionStatus.PendingActivation;
         Amount = amount;
         IsPaid = false;
@@ -60,7 +65,7 @@ public class Subscription : IEntity
     }
 
     public static Subscription Create(Guid subscriberId, Guid planId, 
-        DateTime startDate, int billingCycleDays, decimal amount = 0)
+        DateTime startDate, int billingCycleDays, decimal amount = 0, int? billingCycleHours = null)
     {
         if (subscriberId == Guid.Empty)
             throw new ArgumentException("Subscriber ID is required", nameof(subscriberId));
@@ -68,10 +73,12 @@ public class Subscription : IEntity
         if (planId == Guid.Empty)
             throw new ArgumentException("Plan ID is required", nameof(planId));
 
-        if (billingCycleDays <= 0)
-            throw new ArgumentException("Billing cycle days must be positive", nameof(billingCycleDays));
+        // Validate total billing cycle is at least 1 hour
+        var totalHours = (billingCycleDays * 24) + (billingCycleHours ?? 0);
+        if (totalHours <= 0)
+            throw new ArgumentException("Billing cycle must be at least 1 hour", nameof(billingCycleDays));
 
-        return new Subscription(subscriberId, planId, startDate, billingCycleDays, amount);
+        return new Subscription(subscriberId, planId, startDate, billingCycleDays, billingCycleHours, amount);
     }
 
     public void SetGatewayPaymentId(string gatewayPaymentId)

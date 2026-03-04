@@ -91,9 +91,9 @@ async function disconnectUser(username: string) {
               <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-charcoal">{{ s.name }}</td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-light-gray">{{ s.address || '—' }}</td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-light-gray">{{ s.uptime || '—' }}</td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-light-gray">{{ formatBytes(s.limitBytesIn || 0) }}</td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-light-gray">{{ formatBytes(s.limitBytesOut || 0) }}</td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-golden-sand-dark">{{ formatBytes((s.limitBytesIn || 0) + (s.limitBytesOut || 0)) }}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-light-gray">{{ formatBytes(s.bytesIn || 0) }}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-light-gray">{{ formatBytes(s.bytesOut || 0) }}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-golden-sand-dark">{{ formatBytes((s.bytesIn || 0) + (s.bytesOut || 0)) }}</td>
               <td class="px-6 py-4 whitespace-nowrap text-sm">
                 <button class="text-red-coral hover:text-red-coral-dark font-medium" @click="disconnectUser(s.name)">قطع</button>
               </td>
