@@ -20,7 +20,7 @@ const form = ref({
   name: '',
   description: '',
   price: 0,
-  currency: 'USD',
+  currency: 'SAR',
   speedMbps: 0,
   dataLimitGB: 0,
   billingCycleDays: 30,

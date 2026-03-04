@@ -66,7 +66,7 @@ public class Invoice : IEntity
     public static Invoice Create(string invoiceNumber, Guid subscriberId, 
         Guid? subscriptionId, DateTime issueDate, int dueDays, 
         decimal subtotal, decimal taxAmount = 0, decimal discountAmount = 0,
-        string? notes = null, string currency = "USD")
+        string? notes = null, string currency = "SAR")
     {
         if (string.IsNullOrWhiteSpace(invoiceNumber))
             throw new ArgumentException("Invoice number is required", nameof(invoiceNumber));

@@ -94,7 +94,7 @@ export const useSubscribersStore = defineStore('subscribers', () => {
   }
 
   async function changePlan(id: string, planId: string) {
-    const res = await apiPost(`/subscribers/${id}/change-plan`, { planId })
+    const res = await apiPost(`/subscribers/${id}/change-plan`, { newPlanId: planId })
     return res.data
   }
 

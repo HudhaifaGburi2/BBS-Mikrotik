@@ -17,12 +17,12 @@ public sealed class Money : IEquatable<Money>
         Currency = currency.ToUpperInvariant();
     }
 
-    public static Money Create(decimal amount, string currency = "USD")
+    public static Money Create(decimal amount, string currency = "SAR")
     {
         return new Money(amount, currency);
     }
 
-    public static Money Zero(string currency = "USD") => new Money(0, currency);
+    public static Money Zero(string currency = "SAR") => new Money(0, currency);
 
     public Money Add(Money other)
     {

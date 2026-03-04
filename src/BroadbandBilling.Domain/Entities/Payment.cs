@@ -53,7 +53,7 @@ public class Payment : IEntity
     public static Payment Create(Guid invoiceId, Guid subscriberId, 
         string paymentReference, decimal amount, PaymentMethod method,
         DateTime? paymentDate = null, string? transactionId = null, 
-        string? notes = null, string currency = "USD")
+        string? notes = null, string currency = "SAR")
     {
         if (invoiceId == Guid.Empty)
             throw new ArgumentException("Invoice ID is required", nameof(invoiceId));

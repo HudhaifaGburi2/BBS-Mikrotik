@@ -49,14 +49,14 @@ public class Plan : IEntity
 
     public static Plan Create(string name, string description, decimal price, 
         int speedMbps, int dataLimitGB, int billingCycleDays, 
-        string mikroTikProfileName, string currency = "USD", int? billingCycleHours = null)
+        string mikroTikProfileName, string currency = "SAR", int? billingCycleHours = null)
     {
         return new Plan(name, description, Money.Create(price, currency), 
             speedMbps, dataLimitGB, billingCycleDays, billingCycleHours, mikroTikProfileName);
     }
 
     public void UpdateDetails(string name, string description, decimal price, 
-        int speedMbps, int dataLimitGB, string currency = "USD", int? billingCycleHours = null)
+        int speedMbps, int dataLimitGB, string currency = "SAR", int? billingCycleHours = null)
     {
         Name = name ?? throw new ArgumentNullException(nameof(name));
         Description = description ?? string.Empty;
