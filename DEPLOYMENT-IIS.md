@@ -1,19 +1,19 @@
-# Dushi - دليل النشر على IIS (Windows)
+# DOSHI - IIS Deployment Guide
 
-> نشر نظام Dushi لإدارة فواتير الإنترنت على خادم IIS في Windows مع إتاحته عبر الإنترنت.
+> Deploy DOSHI Broadband Billing System on IIS with Frontend and Backend on the same site.
 
 ---
 
-## المتطلبات الأساسية
+## Prerequisites
 
-| المكون | الإصدار | رابط التحميل |
-|--------|---------|-------------|
-| Windows 10/11 Pro أو Server 2019+ | 64-bit Intel | مثبت مسبقاً |
-| .NET 9 SDK | 9.0+ | https://dotnet.microsoft.com/download/dotnet/9.0 |
-| .NET 9 Hosting Bundle | 9.0+ | https://dotnet.microsoft.com/download/dotnet/9.0 (Windows Hosting Bundle) |
+| Component | Version | Download |
+|-----------|---------|----------|
+| Windows Server 2019+ or Win 10/11 Pro | 64-bit | Pre-installed |
+| .NET 9 Hosting Bundle | 9.0+ | https://dotnet.microsoft.com/download/dotnet/9.0 |
 | Node.js | 18+ | https://nodejs.org |
-| SQL Server | 2019+ أو Express | https://www.microsoft.com/sql-server/sql-server-downloads |
-| Git | أي إصدار | https://git-scm.com/download/win |
+| SQL Server Express | 2019+ | https://www.microsoft.com/sql-server/sql-server-downloads |
+| IIS URL Rewrite | Latest | https://www.iis.net/downloads/microsoft/url-rewrite |
+| IIS ARR (Application Request Routing) | Latest | https://www.iis.net/downloads/microsoft/application-request-routing |
 
 ---
 
